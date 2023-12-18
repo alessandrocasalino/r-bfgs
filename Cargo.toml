@@ -10,3 +10,4 @@ blas-src = { version = "*", features=["openblas"]}
 cblas = "*"
 num = "*"
 log = "*"
+float_eq = "*"

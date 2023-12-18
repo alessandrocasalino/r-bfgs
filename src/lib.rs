@@ -3,7 +3,7 @@ extern crate blas_src;
 
 mod bfgs {
 
-    use log::{error, trace};
+    use log::{error};
 
     pub struct Settings {
         // Exit conditions
@@ -297,7 +297,7 @@ mod tests {
         // Create settings with default parameters
         let mut settings : bfgs::Settings = Default::default();
 
-        settings.verbose = true;
+        settings.verbose = false;
         settings.estimate_a = false;
 
         let d: i32 = 2;
@@ -330,9 +330,9 @@ mod tests {
             }
         };
 
-        let result = bfgs::get_minimum(&ef, &gf, &mut x, &mut f, d, settings);
-        println!("{:?}", result);
-        //assert_eq!(result, Some(4.));
+        let _result = bfgs::get_minimum(&ef, &gf, &mut x, &mut f, d, settings);
+        let cmp = vec![1.,1.];
+        float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.1);
     }
 }
 
