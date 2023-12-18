@@ -19,6 +19,9 @@ mod bfgs {
         // Curvature condition constant
         eta: f64,
 
+        // Try to estimate the value of a
+        pub(crate) estimate_a: bool,
+
         // Verbosity
         pub(crate) verbose: bool,
 
@@ -38,6 +41,7 @@ mod bfgs {
                 iter_max: 10000,
                 mu: 1e-4,
                 eta: 0.9,
+                estimate_a: true,
                 verbose: false,
                 layout: cblas::Layout::RowMajor,
                 part: cblas::Part::Upper
@@ -57,27 +61,33 @@ mod bfgs {
         let x_norm = unsafe { cblas::dnrm2(d, x, 1) };
         let x_norm = f64::max(x_norm, 1.);
 
-        let g_el_max = num::abs(g[ unsafe { cblas::idamax(d, g, 1) } as usize]);
+        let idmax = unsafe { cblas::idamax(d, g, 1) };
+        let g_el_max = num::abs(g[ idmax as usize]);
 
-        g_norm/x_norm > settings.gtol &&
-            g_el_max > settings.gmax &&
-            (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)),1.) > settings.ftol
+        let condition1 = g_norm/x_norm > settings.gtol;
+        let condition2 = g_el_max > settings.gmax;
+        let condition3 = (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)),1.) > settings.ftol;
+
+        condition1 && condition2 && condition3
     }
 
-    fn line_search<Ef, Gf> (mut ef: Ef, mut gf: Gf, p : &Vec<f64>, x : &mut Vec<f64>, x_new : &mut Vec<f64>,
-                            g : &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings)
+    fn line_search<Ef, Gf> (ef: &Ef, gf: &Gf, p : &Vec<f64>, x : &mut Vec<f64>, x_new : &mut Vec<f64>,
+                            g : &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval : &mut usize)
         -> bool
         where
-            Ef: FnMut(&mut Vec<f64>, &mut Vec<f64>, &mut f64, i32),
-            Gf: FnMut(&mut Vec<f64>, &mut Vec<f64>, &mut f64, i32)
+            Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
+            Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
     {
         // Import settings
         let mu = settings.mu;
         let eta = settings.eta;
 
         // Estimate the value of a from the gradient
-        if k_out != 0 {
-            *a = f64::min(1., 1./unsafe {cblas::dnrm2(d, g, 1) });
+        if k_out > 1 && settings.estimate_a {
+            let nrm2 = unsafe {cblas::dnrm2(d, g, 1) };
+            *a = f64::min(1., 1./nrm2);
+        } else {
+            *a = 1.;
         }
 
         // Set energy to current value
@@ -85,21 +95,30 @@ mod bfgs {
 
         let nabla_dot_p = unsafe { cblas::ddot(d, g, 1, p, 1) };
 
-        while *f >= fx + mu * *a * nabla_dot_p || unsafe { cblas::ddot(d, g, 1, p, 1) <= eta * nabla_dot_p } {
+        loop {
+
+            *a = *a * 0.5;
+
             unsafe{ cblas::dcopy(d, x, 1, x_new, 1) };
             unsafe{ cblas::daxpy(d, *a, p, 1, x_new, 1) };
 
             // Update energy and gradient
             ef(x_new, g, f, d);
             gf(x_new, g, f, d);
+            *eval+=1;
 
-            *a = *a * 0.5;
+            if !(*f >= fx + mu * *a * nabla_dot_p || unsafe { cblas::ddot(d, g, 1, p, 1) } <= eta * nabla_dot_p) {
+                break;
+            }
 
             if *a < 1e-20 {
                 error!("Can not find a suitable value for a");
                 return false
             }
+
         }
+
+        unsafe { cblas::dcopy(d, x_new, 1, x, 1) };
 
         true
     }
@@ -126,48 +145,50 @@ mod bfgs {
     }
 
     fn log(x : &Vec<f64>, g : &Vec<f64>, p : &Vec<f64>, y : &Vec<f64>, s : &Vec<f64>, f: f64, f_old: f64, k : usize, a: f64, d: i32) {
-        trace!("--- Iteration {k}");
-        trace!("                         Exit condition  ||g||/max(1,||x||) : {}",
+        println!("--- Iteration {k}");
+        println!("                         Exit condition  ||g||/max(1,||x||) : {}",
             unsafe { cblas::dnrm2(d, g, 1) / f64::max(cblas::dnrm2(d, x, 1), 1.) });
-        trace!("                  Exit condition  max(|g_i|, i = 1, ..., n) : {}",
+        println!("                  Exit condition  max(|g_i|, i = 1, ..., n) : {}",
             num::abs(g[ unsafe { cblas::idamax(d, g, 1) } as usize]));
-        trace!("     Exit condition  (f^k - f^(k+1))/max(|f^k|,|f^(k+1)|,1) : {}",
+        println!("     Exit condition  (f^k - f^(k+1))/max(|f^k|,|f^(k+1)|,1) : {}",
             (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)),1.));
-        trace!("                      Mean value of the displacement vector : {}",
+        println!("                      Mean value of the displacement vector : {}",
             unsafe { cblas::dasum(d, p, 1) } / d as f64);
-        trace!("                Mean position difference from previous step : {}",
+        println!("                Mean position difference from previous step : {}",
             unsafe { cblas::dasum(d, y, 1) } / d as f64 );
-        trace!("                Mean gradient difference from previous step : {}",
+        println!("                Mean gradient difference from previous step : {}",
             unsafe { cblas::dasum(d, s, 1) } / d as f64 );
-        trace!("                                                          a : {}",
+        println!("                                                          a : {}",
             a);
-        trace!("                                                    s^T * y : {}",
+        println!("                                                    s^T * y : {}",
             unsafe { cblas::ddot(d, y, 1, s, 1) });
     }
 
     #[allow(non_snake_case)]
-    pub fn get_minimum<Ef, Gf> (mut ef: Ef, mut gf: Gf, x: &mut Vec<f64>, f: &mut f64, d : i32, settings: Settings)
+    pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d : i32, settings: Settings)
         -> Option<f64>
         where
-            Ef: FnMut(&mut Vec<f64>, &mut Vec<f64>, &mut f64, i32),
-            Gf: FnMut(&mut Vec<f64>, &mut Vec<f64>, &mut f64, i32)
+            Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
+            Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
     {
         // Settings
         let iter_max = settings.iter_max;
-
         // BLAS definitions
         let layout = settings.layout;
         let part = settings.part;
-
         // Verbose (log)
         let verbose = settings.verbose;
+
+        // Function update evaluations
+        let mut eval: usize = 0;
 
         // Gradient definition
         let mut g: Vec<f64> = vec![0.; d as usize];
 
         // Update energy and gradient
-        ef(x, &mut g, f, d);
+        ef(x, &g, f, d);
         gf(x, &mut g, f, d);
+        eval+=1;
 
         // Hessian estimation
         let mut I: Vec<f64> = vec![0.; (d * d) as usize];
@@ -176,6 +197,7 @@ mod bfgs {
             I[(i * (d + 1)) as usize] = 1.;
         }
         unsafe { cblas::dcopy(d * d, &*I, 1, &mut *H, 1); }
+
 
         // Search direction
         let mut p: Vec<f64> = vec![0.; d as usize];
@@ -193,8 +215,8 @@ mod bfgs {
         let mut f_old: f64;
 
         // Temporary matrices for Hessian computation
-        let mut B: Vec<f64> = vec![0.; d as usize];
-        let mut C: Vec<f64> = vec![0.; d as usize];
+        let mut B: Vec<f64> = vec![0.; (d * d) as usize];
+        let mut C: Vec<f64> = vec![0.; (d * d) as usize];
 
         //Iteration number
         let mut k: usize = 0;
@@ -217,13 +239,14 @@ mod bfgs {
 
             // Save the value of Phi_0 to be used for both line_search
             let _phi_0: Point = Point { a: 0., f: *f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
+            // TODO: implement better line_search
             /* Find a according to Wolfe's condition:
              * - more_thuente: check if this can be used to find a (if yes use that a value)
              * - backtracking: otherwise evaluate the second with starting a from the first
              * This ensures that most of the steps have a = a_max = 1
              * NOTE: line_search also updates f
              */
-            if !line_search(&mut ef, &mut gf, &p, x, &mut x_new, &mut g, f, &mut a, d, k, &settings) {
+            if !line_search(&ef, &gf, &p, x, &mut x_new, &mut g, f, &mut a, d, k, &settings, &mut eval) {
                 return None
             }
 
@@ -251,12 +274,12 @@ mod bfgs {
             };
 
             // Exit condition
-            if exit_condition(&x, &g, *f, f_old, d, &settings) {
+            if !exit_condition(&x, &g, *f, f_old, d, &settings) {
                 break;
             }
         }
 
-        Some(2.)
+        Some(*f)
     }
 
 }
@@ -275,21 +298,39 @@ mod tests {
         let mut settings : bfgs::Settings = Default::default();
 
         settings.verbose = true;
+        settings.estimate_a = false;
 
-        let d: i32 = 10;
+        let d: i32 = 2;
         let mut f=0.;
-        let mut x = vec![1.; d as usize];
+        //let mut x = vec![0.1; d as usize];
+        let mut x = vec![-1.2, 1.0];
 
-        let ef = |x: &mut Vec<f64>, _g:&mut Vec<f64>, f:&mut f64, d: i32| {
-            *f = unsafe { cblas::ddot(d, x, 1, x, 1) }
+        let ef = |x: &Vec<f64>, _g:&Vec<f64>, f: &mut f64, d: i32| {
+            *f = 0.;
+            for i in 0..d-1 {
+                *f += 100. * (x[(i + 1) as usize] - x[i as usize] * x[i as usize]) *
+                    (x[(i + 1) as usize] - x[i as usize] * x[i as usize]) + (x[i as usize] - 1.) * (x[i as usize] - 1.);
+            }
         };
-        let gf = |x: &mut Vec<f64>, g:&mut Vec<f64>, _f:&mut f64, d: i32| {
+        let gf = |x: &Vec<f64>, g:&mut Vec<f64>, _f:&f64, d: i32| {
+            // Finite difference derivative
+            let h = 1e-5;
+            let mut x_for = x.clone();
+            let mut x_bck = x.clone();
             for i in 0..d {
-                g[i as usize] = 2. * x[i as usize];
+                let mut f1 = 0.;
+                let mut f2 = 0.;
+                x_for[i as usize] += h;
+                x_bck[i as usize] -= h;
+                ef(&x_bck, g, &mut f1, d);
+                ef(&x_for, g, &mut f2, d);
+                g[i as usize] = (f2 - f1) / (2. * h);
+                x_for[i as usize] -= h;
+                x_bck[i as usize] += h;
             }
         };
 
-        let result = bfgs::get_minimum(ef, gf, &mut x, &mut f, d, settings);
+        let result = bfgs::get_minimum(&ef, &gf, &mut x, &mut f, d, settings);
         println!("{:?}", result);
         //assert_eq!(result, Some(4.));
     }
