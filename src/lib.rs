@@ -1,8 +1,9 @@
 extern crate cblas;
 extern crate blas_src;
 
-use log::{error};
+mod line_search;
 
+/// Settings for the optimization algorithm.
 pub struct Settings {
     // Exit conditions
     ftol: f64,
@@ -69,58 +70,6 @@ fn exit_condition(x: &Vec<f64>, g: &Vec<f64>, f: f64, f_old: f64, d: i32, settin
     condition1 && condition2 && condition3
 }
 
-fn line_search<Ef, Gf> (ef: &Ef, gf: &Gf, p : &Vec<f64>, x : &mut Vec<f64>, x_new : &mut Vec<f64>,
-                        g : &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval : &mut usize)
-    -> bool
-    where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
-{
-    // Import settings
-    let mu = settings.mu;
-    let eta = settings.eta;
-
-    // Estimate the value of a from the gradient
-    if k_out > 1 && settings.estimate_a {
-        let nrm2 = unsafe {cblas::dnrm2(d, g, 1) };
-        *a = f64::min(1., 1./nrm2);
-    } else {
-        *a = 1.;
-    }
-
-    // Set energy to current value
-    let fx = *f;
-
-    let nabla_dot_p = unsafe { cblas::ddot(d, g, 1, p, 1) };
-
-    loop {
-
-        *a = *a * 0.5;
-
-        unsafe{ cblas::dcopy(d, x, 1, x_new, 1) };
-        unsafe{ cblas::daxpy(d, *a, p, 1, x_new, 1) };
-
-        // Update energy and gradient
-        ef(x_new, g, f, d);
-        gf(x_new, g, f, d);
-        *eval+=1;
-
-        if !(*f >= fx + mu * *a * nabla_dot_p || unsafe { cblas::ddot(d, g, 1, p, 1) } <= eta * nabla_dot_p) {
-            break;
-        }
-
-        if *a < 1e-20 {
-            error!("Can not find a suitable value for a");
-            return false
-        }
-
-    }
-
-    unsafe { cblas::dcopy(d, x_new, 1, x, 1) };
-
-    true
-}
-
 #[allow(non_snake_case)]
 fn Hessian(H : &mut Vec<f64>, s : &Vec<f64>, y : &Vec<f64>, I : &Vec<f64>, B : &mut Vec<f64>, C : &mut Vec<f64>,
            d : i32, layout: cblas::Layout, part: cblas::Part) {
@@ -162,8 +111,40 @@ fn log(x : &Vec<f64>, g : &Vec<f64>, p : &Vec<f64>, y : &Vec<f64>, s : &Vec<f64>
         unsafe { cblas::ddot(d, y, 1, s, 1) });
 }
 
+/// Calculates the minimum of a function using the BFGS algorithm.
+///
+/// The BFGS algorithm is an iterative optimization algorithm used to
+/// find the minimum of a function. This implementation uses the BLAS
+/// library for linear algebra computations.
+///
+/// # Arguments
+///
+/// * `ef` - A closure representing the energy function.
+///    It takes in the current position `x`, the gradient vector `g`,
+///    the energy value `f`, and the dimension size `d` as arguments.
+///    The closure is expected to update `f` with the current values
+///    at `x`.
+///
+/// * `gf` - A closure representing the gradient function. It takes in
+///    the current position `x`, the gradient vector `g`, the energy
+///    value `f`, and the dimension size `d` as arguments. The closure
+///    is expected to update `g` with the current value at `x`.
+///
+/// * `x` - A mutable reference to the initial position vector.
+///
+/// * `f` - A mutable reference to the initial energy value.
+///
+/// * `d` - The dimension size.
+///
+/// * `settings` - The settings for the BFGS algorithm.
+///
+/// # Returns
+///
+/// The minimum energy value if the algorithm converges within the
+/// maximum number of iterations specified in the `settings`. Returns
+/// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
-pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d : i32, settings: Settings)
+pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d : i32, settings: Settings)
     -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
@@ -180,12 +161,15 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d :
     // Function update evaluations
     let mut eval: usize = 0;
 
+    // Energy definition
+    let mut f : f64 = 0.;
+
     // Gradient definition
     let mut g: Vec<f64> = vec![0.; d as usize];
 
     // Update energy and gradient
-    ef(x, &g, f, d);
-    gf(x, &mut g, f, d);
+    ef(x, &g, &mut f, d);
+    gf(x, &mut g, &f, d);
     eval+=1;
 
     // Hessian estimation
@@ -230,13 +214,13 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d :
         // Store current values
         unsafe { cblas::dcopy(d, &*x, 1, &mut *s, 1); }
         unsafe { cblas::dcopy(d, &*g, 1, &mut *y, 1); }
-        f_old = *f;
+        f_old = f;
 
         // Store current values
         unsafe { cblas::dsymv(layout, part, d, -1., &*H, d, &*g, 1, 0., &mut *p, 1); }
 
         // Save the value of Phi_0 to be used for both line_search
-        let _phi_0: Point = Point { a: 0., f: *f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
+        let _phi_0: Point = Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
         // TODO: implement better line_search
         /* Find a according to Wolfe's condition:
          * - more_thuente: check if this can be used to find a (if yes use that a value)
@@ -244,7 +228,7 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d :
          * This ensures that most of the steps have a = a_max = 1
          * NOTE: line_search also updates f
          */
-        if !line_search(&ef, &gf, &p, x, &mut x_new, &mut g, f, &mut a, d, k, &settings, &mut eval) {
+        if !line_search::line_search(&ef, &gf, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
             return None
         }
 
@@ -268,14 +252,14 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, f: &mut f64, d :
         Hessian(&mut H, &s, &y, &I, &mut B, &mut C, d, layout, part);
 
         if verbose {
-            log(x, &g, &p, &y, &s, *f, f_old, k, a, d)
+            log(x, &g, &p, &y, &s, f, f_old, k, a, d)
         };
 
         // Exit condition
-        if !exit_condition(&x, &g, *f, f_old, d, &settings) {
+        if !exit_condition(&x, &g, f, f_old, d, &settings) {
             break;
         }
     }
 
-    Some(*f)
+    Some(f)
 }

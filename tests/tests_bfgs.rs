@@ -10,8 +10,6 @@ fn test_simple_function() {
     settings.estimate_a = false;
 
     let d: i32 = 2;
-    let mut f=0.;
-    //let mut x = vec![0.1; d as usize];
     let mut x = vec![-1.2, 1.0];
 
     let ef = |x: &Vec<f64>, _g:&Vec<f64>, f: &mut f64, d: i32| {
@@ -39,7 +37,7 @@ fn test_simple_function() {
         }
     };
 
-    let _result = bfgs::get_minimum(&ef, &gf, &mut x, &mut f, d, settings);
+    let _result = bfgs::get_minimum(&ef, &gf, &mut x, d, settings);
     let cmp = vec![1.,1.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.1);
 }
