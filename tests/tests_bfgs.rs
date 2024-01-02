@@ -1,10 +1,9 @@
 #[test]
 fn test_simple_function() {
-
     use bfgs;
 
     // Create settings with default parameters
-    let mut settings : bfgs::Settings = Default::default();
+    let mut settings: bfgs::Settings = Default::default();
 
     settings.verbose = false;
     settings.estimate_a = false;
@@ -12,14 +11,14 @@ fn test_simple_function() {
     let d: i32 = 2;
     let mut x = vec![-1.2, 1.0];
 
-    let ef = |x: &Vec<f64>, _g:&Vec<f64>, f: &mut f64, d: i32| {
+    let ef = |x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, d: i32| {
         *f = 0.;
-        for i in 0..d-1 {
+        for i in 0..d - 1 {
             *f += 100. * (x[(i + 1) as usize] - x[i as usize] * x[i as usize]) *
                 (x[(i + 1) as usize] - x[i as usize] * x[i as usize]) + (x[i as usize] - 1.) * (x[i as usize] - 1.);
         }
     };
-    let gf = |x: &Vec<f64>, g:&mut Vec<f64>, _f:&f64, d: i32| {
+    let gf = |x: &Vec<f64>, g: &mut Vec<f64>, _f: &f64, d: i32| {
         // Finite difference derivative
         let h = 1e-5;
         let mut x_for = x.clone();
@@ -38,6 +37,6 @@ fn test_simple_function() {
     };
 
     let _result = bfgs::get_minimum(&ef, &gf, &mut x, d, settings);
-    let cmp = vec![1.,1.];
+    let cmp = vec![1., 1.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.1);
 }

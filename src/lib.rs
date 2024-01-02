@@ -3,7 +3,21 @@ extern crate blas_src;
 
 mod line_search;
 
-/// Settings for the optimization algorithm.
+/// Enumerator for minimization algorithm
+pub enum MinimizationAlg {
+    Bfgs,
+    Lbfgs,
+    BfgsBackup,
+}
+
+/// Enumerator for line search algorithm
+pub enum LineSearchAlg {
+    Simple,
+    Backtracking,
+}
+
+
+/// Settings struct for the optimization algorithm.
 pub struct Settings {
     // Exit conditions
     ftol: f64,
@@ -28,6 +42,10 @@ pub struct Settings {
     layout: cblas::Layout,
     // Use only the upper matrix part
     part: cblas::Part,
+
+    _minimization: MinimizationAlg,
+
+    _line_search: LineSearchAlg,
 }
 
 // Default trait for Settings
@@ -43,16 +61,18 @@ impl Default for Settings {
             estimate_a: true,
             verbose: false,
             layout: cblas::Layout::RowMajor,
-            part: cblas::Part::Upper
+            part: cblas::Part::Upper,
+            _minimization: MinimizationAlg::Bfgs,
+            _line_search: LineSearchAlg::Simple,
         }
     }
 }
 
 #[allow(dead_code)]
 struct Point {
-    a : f64,
-    f : f64,
-    d : f64,
+    a: f64,
+    f: f64,
+    d: f64,
 }
 
 fn exit_condition(x: &Vec<f64>, g: &Vec<f64>, f: f64, f_old: f64, d: i32, settings: &Settings) -> bool {
@@ -61,19 +81,19 @@ fn exit_condition(x: &Vec<f64>, g: &Vec<f64>, f: f64, f_old: f64, d: i32, settin
     let x_norm = f64::max(x_norm, 1.);
 
     let idmax = unsafe { cblas::idamax(d, g, 1) };
-    let g_el_max = num::abs(g[ idmax as usize]);
+    let g_el_max = num::abs(g[idmax as usize]);
 
-    let condition1 = g_norm/x_norm > settings.gtol;
+    let condition1 = g_norm / x_norm > settings.gtol;
     let condition2 = g_el_max > settings.gmax;
-    let condition3 = (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)),1.) > settings.ftol;
+    let condition3 = (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)), 1.) > settings.ftol;
 
     condition1 && condition2 && condition3
 }
 
 #[allow(non_snake_case)]
-fn Hessian(H : &mut Vec<f64>, s : &Vec<f64>, y : &Vec<f64>, I : &Vec<f64>, B : &mut Vec<f64>, C : &mut Vec<f64>,
-           d : i32, layout: cblas::Layout, part: cblas::Part) {
-    let rho : f64 = 1./unsafe {cblas::ddot(d, y, 1, s, 1)};
+fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
+           d: i32, layout: cblas::Layout, part: cblas::Part) {
+    let rho: f64 = 1. / unsafe { cblas::ddot(d, y, 1, s, 1) };
 
     // Set B to the identity
     unsafe { cblas::dcopy(d * d, I, 1, &mut *B, 1); }
@@ -87,28 +107,30 @@ fn Hessian(H : &mut Vec<f64>, s : &Vec<f64>, y : &Vec<f64>, I : &Vec<f64>, B : &
     unsafe { cblas::dscal(d * d, 0., H, 1); }
     unsafe { cblas::dger(layout, d, d, rho, s, 1, s, 1, H, d); }
     // Since no matrix is symmetric, gemm is used
-    unsafe { cblas::dgemm(layout, cblas::Transpose::Ordinary, cblas::Transpose::None, d, d, d, 1., B, d, C, d,
-                          1., H, d); }
+    unsafe {
+        cblas::dgemm(layout, cblas::Transpose::Ordinary, cblas::Transpose::None, d, d, d, 1., B, d, C, d,
+                     1., H, d);
+    }
 }
 
-fn log(x : &Vec<f64>, g : &Vec<f64>, p : &Vec<f64>, y : &Vec<f64>, s : &Vec<f64>, f: f64, f_old: f64, k : usize, a: f64, d: i32) {
+fn log(x: &Vec<f64>, g: &Vec<f64>, p: &Vec<f64>, y: &Vec<f64>, s: &Vec<f64>, f: f64, f_old: f64, k: usize, a: f64, d: i32) {
     println!("--- Iteration {k}");
     println!("                         Exit condition  ||g||/max(1,||x||) : {}",
-        unsafe { cblas::dnrm2(d, g, 1) / f64::max(cblas::dnrm2(d, x, 1), 1.) });
+             unsafe { cblas::dnrm2(d, g, 1) / f64::max(cblas::dnrm2(d, x, 1), 1.) });
     println!("                  Exit condition  max(|g_i|, i = 1, ..., n) : {}",
-        num::abs(g[ unsafe { cblas::idamax(d, g, 1) } as usize]));
+             num::abs(g[unsafe { cblas::idamax(d, g, 1) } as usize]));
     println!("     Exit condition  (f^k - f^(k+1))/max(|f^k|,|f^(k+1)|,1) : {}",
-        (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)),1.));
+             (f_old - f) / f64::max(f64::max(num::abs(f_old), num::abs(f)), 1.));
     println!("                      Mean value of the displacement vector : {}",
-        unsafe { cblas::dasum(d, p, 1) } / d as f64);
+             unsafe { cblas::dasum(d, p, 1) } / d as f64);
     println!("                Mean position difference from previous step : {}",
-        unsafe { cblas::dasum(d, y, 1) } / d as f64 );
+             unsafe { cblas::dasum(d, y, 1) } / d as f64);
     println!("                Mean gradient difference from previous step : {}",
-        unsafe { cblas::dasum(d, s, 1) } / d as f64 );
+             unsafe { cblas::dasum(d, s, 1) } / d as f64);
     println!("                                                          a : {}",
-        a);
+             a);
     println!("                                                    s^T * y : {}",
-        unsafe { cblas::ddot(d, y, 1, s, 1) });
+             unsafe { cblas::ddot(d, y, 1, s, 1) });
 }
 
 /// Calculates the minimum of a function using the BFGS algorithm.
@@ -144,8 +166,8 @@ fn log(x : &Vec<f64>, g : &Vec<f64>, p : &Vec<f64>, y : &Vec<f64>, s : &Vec<f64>
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
-pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d : i32, settings: Settings)
-    -> Option<f64>
+pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settings)
+                           -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
@@ -162,7 +184,7 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d : i32, setting
     let mut eval: usize = 0;
 
     // Energy definition
-    let mut f : f64 = 0.;
+    let mut f: f64 = 0.;
 
     // Gradient definition
     let mut g: Vec<f64> = vec![0.; d as usize];
@@ -170,7 +192,7 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d : i32, setting
     // Update energy and gradient
     ef(x, &g, &mut f, d);
     gf(x, &mut g, &f, d);
-    eval+=1;
+    eval += 1;
 
     // Hessian estimation
     let mut I: Vec<f64> = vec![0.; (d * d) as usize];
@@ -229,7 +251,7 @@ pub fn get_minimum<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d : i32, setting
          * NOTE: line_search also updates f
          */
         if !line_search::line_search(&ef, &gf, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
-            return None
+            return None;
         }
 
         // Update x with the new values of a
