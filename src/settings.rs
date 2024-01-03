@@ -35,6 +35,12 @@ pub struct Settings {
     /// Curvature condition constant
     pub eta: f64,
 
+    // L-BFGS specific options (not used for standard BFGS)
+    /// L-BFGS number of history points
+    pub history_depth: usize,
+    /// m1qn3 diagonal matrix compute
+    pub m1qn3 : bool,
+
     /// Try to estimate the value of a
     pub estimate_a: bool,
 
@@ -51,18 +57,20 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Settings {
         Settings {
+            minimization: MinimizationAlg::Bfgs,
+            _line_search: LineSearchAlg::Simple,
             ftol: 1e-6,
             gtol: 1e-14,
             gmax: 1e-14,
             iter_max: 10000,
             mu: 1e-4,
             eta: 0.9,
+            history_depth: 10,
+            m1qn3: true,
             estimate_a: true,
             verbose: false,
             layout: cblas::Layout::RowMajor,
             part: cblas::Part::Upper,
-            minimization: MinimizationAlg::Bfgs,
-            _line_search: LineSearchAlg::Simple,
         }
     }
 }

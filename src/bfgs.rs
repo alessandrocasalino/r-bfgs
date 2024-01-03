@@ -2,7 +2,7 @@ use crate::{exit_condition, line_search, Point};
 use crate::settings::Settings;
 
 #[allow(non_snake_case)]
-pub(crate) fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
+fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
            d: i32, layout: cblas::Layout, part: cblas::Part) {
     let rho: f64 = 1. / unsafe { cblas::ddot(d, y, 1, s, 1) };
 
@@ -25,7 +25,7 @@ pub(crate) fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>
 }
 
 #[allow(non_snake_case)]
-pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settings)
+pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Settings)
                            -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),

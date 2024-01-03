@@ -54,7 +54,7 @@ struct Point {
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
-pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settings)
+pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Settings)
                            -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
@@ -69,6 +69,18 @@ pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings:
             use crate::lbfgs::lbfgs;
             lbfgs(ef, gf, x, d, settings)
         }
-        _ => None
+        MinimizationAlg::BfgsBackup => {
+            use crate::bfgs::bfgs;
+            use crate::lbfgs::lbfgs;
+            match bfgs(ef, gf, x, d, settings) {
+                Some(f) => Some(f),
+                None => {
+                    match lbfgs(ef, gf, x, d, settings) {
+                        Some(f) => Some(f),
+                        None => None
+                    }
+                }
+            }
+        }
     }
 }

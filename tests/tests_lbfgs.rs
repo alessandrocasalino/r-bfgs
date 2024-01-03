@@ -7,7 +7,7 @@ fn test_simple_function() {
     // Create settings with default parameters
     let mut settings: bfgs::settings::Settings = Default::default();
 
-    settings.minimization = MinimizationAlg::Bfgs;
+    settings.minimization = MinimizationAlg::Lbfgs;
     settings.verbose = true;
     settings.estimate_a = false;
 
