@@ -8,7 +8,7 @@ fn test_simple_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Bfgs;
-    settings.verbose = true;
+    settings.verbose = false;
     settings.estimate_a = false;
 
     let d: i32 = 2;

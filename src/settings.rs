@@ -14,6 +14,17 @@ pub enum LineSearchAlg {
 
 
 /// Settings struct for the optimization algorithm.
+///
+/// # Examples
+///
+/// ```
+/// // Create settings with default parameters
+/// let mut settings: bfgs::settings::Settings = Default::default();
+/// // Choose the minimization algorithm
+/// settings.minimization = bfgs::settings::MinimizationAlg::Bfgs;
+/// settings.verbose = false;
+/// ```
+///
 pub struct Settings {
     /// Minimization algorithm (Bfgs, Lbfgs, BfgsBackup)
     pub minimization: MinimizationAlg,
