@@ -1,3 +1,3 @@
 # BFGS
 
-A simple BFGS implementation in Rust.
+A BFGS implementation in Rust using BLAS routines.
