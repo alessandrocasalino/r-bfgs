@@ -2,31 +2,8 @@ use crate::{exit_condition, line_search, Point};
 use crate::settings::Settings;
 
 #[allow(non_snake_case)]
-pub(crate) fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
-           d: i32, layout: cblas::Layout, part: cblas::Part) {
-    let rho: f64 = 1. / unsafe { cblas::ddot(d, y, 1, s, 1) };
-
-    // Set B to the identity
-    unsafe { cblas::dcopy(d * d, I, 1, &mut *B, 1); }
-
-    unsafe { cblas::dger(layout, d, d, -rho, y, 1, s, 1, &mut *B, d); }
-
-    // The first matrix multiplication have one symmetric matrix
-    unsafe { cblas::dsymm(layout, cblas::Side::Left, part, d, d, 1., H, d, B, d, 0., &mut *C, d); }
-
-    // Flush the value of the Hessian to 0
-    unsafe { cblas::dscal(d * d, 0., H, 1); }
-    unsafe { cblas::dger(layout, d, d, rho, s, 1, s, 1, H, d); }
-    // Since no matrix is symmetric, gemm is used
-    unsafe {
-        cblas::dgemm(layout, cblas::Transpose::Ordinary, cblas::Transpose::None, d, d, d, 1., B, d, C, d,
-                     1., H, d);
-    }
-}
-
-#[allow(non_snake_case)]
-pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settings)
-                           -> Option<f64>
+pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settings)
+                    -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
@@ -130,7 +107,7 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: Settin
         }
 
         // Compute the Hessian
-        Hessian(&mut H, &s, &y, &I, &mut B, &mut C, d, layout, part);
+        crate::bfgs::Hessian(&mut H, &s, &y, &I, &mut B, &mut C, d, layout, part);
 
         if verbose {
             crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d)

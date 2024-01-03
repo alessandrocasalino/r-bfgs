@@ -6,12 +6,12 @@ pub mod settings;
 
 // Private modules
 mod bfgs;
+mod lbfgs;
 mod line_search;
-mod log;
 mod exit_condition;
+mod log;
 
-use settings::Settings;
-use crate::bfgs::bfgs;
+use crate::settings::Settings;
 use crate::settings::MinimizationAlg;
 
 #[allow(dead_code)]
@@ -19,29 +19,6 @@ struct Point {
     a: f64,
     f: f64,
     d: f64,
-}
-
-#[allow(non_snake_case)]
-fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
-           d: i32, layout: cblas::Layout, part: cblas::Part) {
-    let rho: f64 = 1. / unsafe { cblas::ddot(d, y, 1, s, 1) };
-
-    // Set B to the identity
-    unsafe { cblas::dcopy(d * d, I, 1, &mut *B, 1); }
-
-    unsafe { cblas::dger(layout, d, d, -rho, y, 1, s, 1, &mut *B, d); }
-
-    // The first matrix multiplication have one symmetric matrix
-    unsafe { cblas::dsymm(layout, cblas::Side::Left, part, d, d, 1., H, d, B, d, 0., &mut *C, d); }
-
-    // Flush the value of the Hessian to 0
-    unsafe { cblas::dscal(d * d, 0., H, 1); }
-    unsafe { cblas::dger(layout, d, d, rho, s, 1, s, 1, H, d); }
-    // Since no matrix is symmetric, gemm is used
-    unsafe {
-        cblas::dgemm(layout, cblas::Transpose::Ordinary, cblas::Transpose::None, d, d, d, 1., B, d, C, d,
-                     1., H, d);
-    }
 }
 
 /// Calculates the minimum of a function using the BFGS algorithm.
@@ -85,7 +62,12 @@ pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings:
 {
     match settings.minimization {
         MinimizationAlg::Bfgs => {
+            use crate::bfgs::bfgs;
             bfgs(ef, gf, x, d, settings)
+        }
+        MinimizationAlg::Lbfgs => {
+            use crate::lbfgs::lbfgs;
+            lbfgs(ef, gf, x, d, settings)
         }
         _ => None
     }
