@@ -1,6 +1,8 @@
 use log::error;
-use crate::Settings;
 
+use crate::settings::Settings;
+
+/// Simple line search according to Wolfe's condition
 pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
                                   g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
                                   -> bool

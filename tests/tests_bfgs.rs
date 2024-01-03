@@ -1,10 +1,13 @@
+use bfgs::settings::MinimizationAlg;
+
 #[test]
 fn test_simple_function() {
     use bfgs;
 
     // Create settings with default parameters
-    let mut settings: bfgs::Settings = Default::default();
+    let mut settings: bfgs::settings::Settings = Default::default();
 
+    settings.minimization = MinimizationAlg::Bfgs;
     settings.verbose = false;
     settings.estimate_a = false;
 
