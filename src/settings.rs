@@ -12,7 +12,6 @@ pub enum LineSearchAlg {
     Backtracking,
 }
 
-
 /// Settings struct for the optimization algorithm.
 ///
 /// # Examples
