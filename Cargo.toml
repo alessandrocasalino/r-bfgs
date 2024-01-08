@@ -11,3 +11,6 @@ cblas = "*"
 num = "*"
 log = "*"
 float_eq = "*"
+
+[dev-dependencies]
+rand = "*"

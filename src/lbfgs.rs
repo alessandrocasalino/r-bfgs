@@ -178,7 +178,7 @@ pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Sett
         }
 
         if verbose {
-            crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d)
+            crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
         };
 
         // Store in deque

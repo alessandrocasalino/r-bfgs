@@ -133,7 +133,7 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Setti
         Hessian(&mut H, &s, &y, &I, &mut B, &mut C, d, layout, part);
 
         if verbose {
-            crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d)
+            crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
         };
 
         // Exit condition

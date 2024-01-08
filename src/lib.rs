@@ -42,8 +42,6 @@ struct Point {
 ///
 /// * `x` - A mutable reference to the initial position vector.
 ///
-/// * `f` - A mutable reference to the initial energy value.
-///
 /// * `d` - The dimension size.
 ///
 /// * `settings` - The settings for the BFGS algorithm.
@@ -60,6 +58,12 @@ pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings:
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
+    // Check value of settings
+    if settings.mu > settings.eta {
+        println!("ERROR: mu can not be bigger than eta");
+        return None;
+    }
+
     match settings.minimization {
         MinimizationAlg::Bfgs => {
             use crate::bfgs::bfgs;
@@ -71,10 +75,11 @@ pub fn get_minimum<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings:
         }
         MinimizationAlg::BfgsBackup => {
             use crate::bfgs::bfgs;
-            use crate::lbfgs::lbfgs;
-            match bfgs(ef, gf, x, d, settings) {
+            let r = bfgs(ef, gf, x, d, settings);
+            match r {
                 Some(f) => Some(f),
                 None => {
+                    use crate::lbfgs::lbfgs;
                     match lbfgs(ef, gf, x, d, settings) {
                         Some(f) => Some(f),
                         None => None

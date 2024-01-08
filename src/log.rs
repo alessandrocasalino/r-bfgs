@@ -1,5 +1,6 @@
-pub(crate) fn print_log(x: &Vec<f64>, g: &Vec<f64>, p: &Vec<f64>, y: &Vec<f64>, s: &Vec<f64>, f: f64, f_old: f64, k: usize, a: f64, d: i32) {
+pub(crate) fn print_log(x: &Vec<f64>, g: &Vec<f64>, p: &Vec<f64>, y: &Vec<f64>, s: &Vec<f64>, f: f64, f_old: f64, k: usize, a: f64, d: i32, eval: usize) {
     println!("--- Iteration {k}");
+    println!("                                       Function evaluations : {}", eval);
     println!("                         Exit condition  ||g||/max(1,||x||) : {}",
              unsafe { cblas::dnrm2(d, g, 1) / f64::max(cblas::dnrm2(d, x, 1), 1.) });
     println!("                  Exit condition  max(|g_i|, i = 1, ..., n) : {}",
