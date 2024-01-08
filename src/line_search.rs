@@ -42,9 +42,6 @@ pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f6
 
         *a = *a * 0.5;
 
-        println!("{a}");
-        println!("{} < {}     {} > {}", *f, fx + mu * *a * nabla_dot_p, unsafe { cblas::ddot(d, g, 1, p, 1) }, eta * nabla_dot_p);
-
         // Try to increase the value of initial a or stop the process if the value of a is too low
         if *a < 1e-6 {
             if a_init < 1000. {
@@ -62,3 +59,4 @@ pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f6
 
     true
 }
+

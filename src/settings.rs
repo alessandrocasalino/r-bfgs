@@ -8,7 +8,9 @@ pub enum MinimizationAlg {
 
 /// Enumerator for line search algorithm
 pub enum LineSearchAlg {
+    /// A line search according to Wolfe's conditions: Armijo and curvature conditions (slower)
     Simple,
+    /// A line search using More-Thuente and backtracking algorithm (faster, but might fail in some cases)
     Backtracking,
 }
 
