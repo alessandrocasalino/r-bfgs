@@ -14,13 +14,6 @@ mod log;
 use crate::settings::Settings;
 use crate::settings::MinimizationAlg;
 
-#[allow(dead_code)]
-struct Point {
-    a: f64,
-    f: f64,
-    d: f64,
-}
-
 /// Calculates the minimum of a function using the BFGS algorithm.
 ///
 /// The BFGS algorithm is an iterative optimization algorithm used to

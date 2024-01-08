@@ -30,7 +30,7 @@ pub struct Settings {
     /// Minimization algorithm (Bfgs, Lbfgs, BfgsBackup)
     pub minimization: MinimizationAlg,
     /// Line search algorithm
-    pub _line_search: LineSearchAlg,
+    pub line_search: LineSearchAlg,
 
     /// Exit condition
     pub ftol: f64,
@@ -70,7 +70,7 @@ impl Default for Settings {
     fn default() -> Settings {
         Settings {
             minimization: MinimizationAlg::Bfgs,
-            _line_search: LineSearchAlg::Simple,
+            line_search: LineSearchAlg::Simple,
             ftol: 1e-6,
             gtol: 1e-14,
             gmax: 1e-14,

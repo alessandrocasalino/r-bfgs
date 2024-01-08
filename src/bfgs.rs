@@ -1,4 +1,4 @@
-use crate::{exit_condition, line_search, Point};
+use crate::{exit_condition, line_search};
 use crate::settings::Settings;
 
 #[allow(non_snake_case)]
@@ -101,7 +101,7 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Setti
         unsafe { cblas::dsymv(layout, part, d, -1., &*H, d, &*g, 1, 0., &mut *p, 1); }
 
         // Save the value of Phi_0 to be used for both line_search
-        let _phi_0: Point = Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
+        let _phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
         // TODO: implement better line_search
         /* Find a according to Wolfe's condition:
          * - more_thuente: check if this can be used to find a (if yes use that a value)
