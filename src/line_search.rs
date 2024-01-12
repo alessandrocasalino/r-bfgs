@@ -115,15 +115,15 @@ fn trial_value(l: &Point, t: &Point, u: &Point, bracketed: bool) -> (f64, u32) {
     // Case 1: a higher function value. The minimum is bracketed.
     if t.f > l.f {
         let aq = find_quadratic_minimizer_3(l.a, l.f, l.d, t.a, t.f);
-        let res = if (ac-l.a).abs() < (aq-l.a).abs() { ac } else { (aq+ac)/2. };
-        return (res, 1)
+        let res = if (ac - l.a).abs() < (aq - l.a).abs() { ac } else { (aq + ac) / 2. };
+        return (res, 1);
     }
 
     // Case 2: A lower function value and derivatives of opposite sign. The minimum is
     // bracketed.
     let ar = find_quadratic_minimizer_2(l.a, l.d, t.a, t.d);
     if (l.d > 0. && t.d < 0.) || (l.d < 0. && t.d > 0.) {
-        let res = if (ac - t.a).abs() >= (ar - t.a).abs() {ac} else {ar};
+        let res = if (ac - t.a).abs() >= (ar - t.a).abs() { ac } else { ar };
         return (res, 2);
     }
 
@@ -135,14 +135,13 @@ fn trial_value(l: &Point, t: &Point, u: &Point, bracketed: bool) -> (f64, u32) {
         if (l.a < u.a && ac <= t.a) || (l.a > u.a && ac >= t.a) {
             ac = u.a
         };
-        let res = if bracketed { if (ac - t.a).abs() < (ar - t.a).abs() {ac} else {ar}}
-            else {if (ac - t.a).abs() > (ar - t.a).abs() {ac} else {ar}};
+        let res = if bracketed { if (ac - t.a).abs() < (ar - t.a).abs() { ac } else { ar } } else { if (ac - t.a).abs() > (ar - t.a).abs() { ac } else { ar } };
         return (res, 3);
     }
 
     // Case 4: A lower function value, derivatives of the same sign, and the magnitude of
     // the derivative does not decrease.
-    let res = if bracketed {find_cubic_minimizer(t.a, t.f, t.d, u.a, u.f, u.d)} else {u.a};
+    let res = if bracketed { find_cubic_minimizer(t.a, t.f, t.d, u.a, u.f, u.d) } else { u.a };
     (res, 4)
 }
 
@@ -152,18 +151,18 @@ pub(crate) fn update_function<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Ve
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32) {
-    unsafe{ cblas::dcopy(d, x, 1, x_new, 1)};
-    unsafe{ cblas::daxpy(d, *a, p, 1, x_new, 1)};
+    unsafe { cblas::dcopy(d, x, 1, x_new, 1) };
+    unsafe { cblas::daxpy(d, *a, p, 1, x_new, 1) };
 
     ef(x_new, g, f, d);
     gf(x_new, g, f, d);
     *eval += 1;
 
-    *phi = Point{a: *a, f: *f, d : unsafe{ cblas::ddot(d, g, 1, p, 1)}};
+    *phi = Point { a: *a, f: *f, d: unsafe { cblas::ddot(d, g, 1, p, 1) } };
 }
 
 /// Algorithm for efficient line search from J. J. More and D. J. Thuente, Line search algorithms with guaranteed sufficient decrease, ACM Transactions on Mathematical Software, 20 (1994)
-pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
                                                g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize, iter_max: usize)
                                                -> bool
     where
@@ -171,7 +170,7 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, 
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
     // Estimate the value of a from the gradient
-    *a = if k_out > 0 {1.} else {f64::min(1., 1./unsafe{ cblas::dnrm2(d, g, 1) })};
+    *a = if k_out > 0 { 1. } else { f64::min(1., 1. / unsafe { cblas::dnrm2(d, g, 1) }) };
 
     // Import settings
     let mu = settings.mu;
@@ -181,8 +180,8 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, 
     let init_step = *a;
 
     // Use function psi instead if phi
-    let stage1 = true;
-    let bracketed = false;
+    let mut stage1 = true;
+    let mut bracketed = false;
 
     // Extract starting point from input
     let mut phi_0: Point = (*phi_s).clone();
@@ -191,16 +190,16 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, 
 
     // Temporary points
     let mut phi_l: Point = phi_0.clone();
-    let mut phi_u = Point { a: 0., f: 0., d: 0.};
-    let mut phi_j = Point { a: 0., f: 0., d: 0.};
+    let mut phi_u = Point { a: 0., f: 0., d: 0. };
+    let mut phi_j = Point { a: 0., f: 0., d: 0. };
 
-    let width_prev = f64::MAX;
+    let mut width_prev = f64::MAX;
 
-    let k: usize = 1;
+    let mut k: usize = 1;
 
     while k <= iter_max {
-        if!bracketed {
-            phi_u.a = *a + 4. * (*a-phi_l.a);
+        if !bracketed {
+            phi_u.a = *a + 4. * (*a - phi_l.a);
         }
         update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_j, eval);
         // Change the sign of the derivative to be consistent with paper notation
@@ -213,16 +212,16 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, 
         if !phi_l.a.is_finite() || !phi_l.f.is_finite() || !phi_l.d.is_finite() ||
             !phi_j.a.is_finite() || !phi_j.f.is_finite() || !phi_j.d.is_finite() ||
             !phi_u.a.is_finite() || !phi_u.f.is_finite() || !phi_u.d.is_finite() ||
-            ( (phi_l.a >= phi_u.a || phi_l.a >= phi_j.a || phi_j.a >= phi_u.a || phi_l.d >= 0.) &&
+            ((phi_l.a >= phi_u.a || phi_l.a >= phi_j.a || phi_j.a >= phi_u.a || phi_l.d >= 0.) &&
                 (phi_l.a <= phi_u.a || phi_l.a <= phi_j.a || phi_j.a <= phi_u.a || phi_l.d <= 0.)) {
             break;
         }
 
         let psi = |phi_a: &Point| -> Point{
-            Point{
+            Point {
                 a: phi_a.a,
-                f: phi_a.f - phi_0.f - mu*phi_0.d*phi_a.a,
-                d: phi_a.d - mu*phi_0.d,
+                f: phi_a.f - phi_0.f - mu * phi_0.d * phi_a.a,
+                d: phi_a.d - mu * phi_0.d,
             }
         };
 
@@ -230,20 +229,128 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(phi_s: &Point, ef: &Ef, gf: &Gf, 
         // after theorem 3.2 in the paper) by switching from using function psi to using
         // function phi. The decision follows the logic in the paragraph right before
         // theorem 3.3 in the paper.
+        stage1 = stage1 && (psi(&phi_j).f > 0. || phi_j.d < f64::min(mu, eta) * phi_0.d)
+        let caseno = 0;
+        // TODO: check std::tie analogue in Rust
+        let (a, caseno) = if stage1 && phi_j.f <= phi_l.f && psi(&phi_j).f > 0. { trial_value(&psi(&phi_l), &psi(&phi_j), &psi(&phi_u), bracketed) } else { trial_value(&phi_l, &phi_j, &phi_u, bracketed) };
+
+        bracketed = bracketed || (caseno == 1 || caseno == 2);
+        let width = (phi_u.a - phi_l.a).abs();
+
+        // Update the interval of uncertainty
+        // Note that the update does not depend on the new trial value
+        match caseno {
+            1 => {
+                phi_u = phi_j;
+            }
+            2 => {
+                phi_u = phi_l;
+                phi_l = phi_j;
+            }
+            _ => {
+                phi_l = phi_j;
+            }
+        }
+
+        if bracketed {
+            if caseno == 1 || caseno == 3 {
+                // Force a sufficient decrease in the size of the interval of uncertainty
+                if (phi_u.a - phi_l.a).abs() >= 0.66 * width_prev {
+                    *a = (phi_l.a + phi_u.a) / 2.;
+                }
+                // Safeguard the trial value
+                else {
+                    // The magic constant is used in the paper (Section 4, Case 3)
+                    let safeguard1 = phi_l.a + 0.66 * (phi_u.a - phi_l.a);
+                    *a = if phi_l.a < phi_u.a { f64::min(safeguard1, a) } else { f64::max(safeguard1, a) };
+                    let safeguard2 = phi_l.a + 0.001 * (phi_u.a - phi_l.a);
+                    *a = if phi_l.a > phi_u.a { f64::min(safeguard2, a) } else { f64::max(safeguard2, a) };
+                }
+            }
+            width_prev = width;
+        }
+
+        // Force the step to be within the interval bounds
+        *a = if phi_l.a < phi_u.a  {f64::max(phi_l.a, f64::min(phi_u.a, a))} else {f64::min(phi_l.a, f64::max(phi_u.a, a))};
+
+        k += 1;
     }
 
+    *a = init_step;
     false
 }
 
-/// A line search using More-Thuente and backtracking algorithm (faster, but might fail in some cases)
-pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
-                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
+/* Routine for efficient line-search from
+ * Jorge Nocedal Stephen J. Wright "Numerical Optimization" (2nd Edition)
+ * Algorithm 3.5 (Line Search Algorithm) and Algorithm 3.6 (Zoom) */
+pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize, iter_max: usize)
                                                -> bool
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
-    false
+    // Import settings
+    let mu = settings.mu;
+    let eta = settings.eta;
+
+    let init_step = *a;
+    let mut phi_l : Point = phi_0.clone();
+    let mut phi_u : Point = Default::default();
+
+    let mut k = 1;
+
+    // Main Line Search - Algorithm 3.5 (Line Search Algorithm)
+    // From the book notation: Phi_u = Phi(alpha_j) and Phi_l = Phi_(alpha_(j-1))
+    while k <= iter_max {
+        update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_u, eval);
+
+        if !sufficient_decrease(phi_0, &phi_u, mu) || (k > 1 && phi_u.f >= phi_l.f) {
+            // Go to the zoom phase
+            break;
+        }
+        if curvature_condition(phi_0, &phi_u, eta) {
+            return true;
+        }
+        if phi_u.d >= 0. {
+            // Go to the zoom phase with inverted arguments
+            mem::swap(&mut phi_l, &mut phi_u);
+            break;
+        }
+
+        // Update a with a value between a and a_max
+        *a = 0.5 * (1. - a);
+        phi_l = phi_u;
+        k += 1;
+    }
+
+    let mut phi_j: Point = Default::default();
+
+    k = 1;
+    // Zoom phase (when main loop above succeeds) - Algorithm 3.6 (Zoom)
+    while k <= iter_max {
+        *a = (phi_l.a + phi_u.a) / 2.;
+
+        update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_j, eval);
+
+        if !sufficient_decrease(phi_0, &phi_j, mu) || phi_j.f >= phi_l.f {
+            phi_u = phi_j;
+        } else {
+            if curvature_condition(phi_0, &phi_j, eta) {
+                return true;
+            }
+            if (phi_j.d * (phi_u.a - phi_l.a) >= 0. {
+                phi_u = phi_l;
+            }
+
+            phi_l = phi_j;
+        }
+
+        k += 1;
+    }
+
+    *a = init_step;
+    return false;
 }
 
 pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
