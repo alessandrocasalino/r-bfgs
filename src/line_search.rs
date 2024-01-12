@@ -229,10 +229,13 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
         // after theorem 3.2 in the paper) by switching from using function psi to using
         // function phi. The decision follows the logic in the paragraph right before
         // theorem 3.3 in the paper.
-        stage1 = stage1 && (psi(&phi_j).f > 0. || phi_j.d < f64::min(mu, eta) * phi_0.d)
-        let caseno = 0;
+        stage1 = stage1 && (psi(&phi_j).f > 0. || phi_j.d < f64::min(mu, eta) * phi_0.d);
         // TODO: check std::tie analogue in Rust
-        let (a, caseno) = if stage1 && phi_j.f <= phi_l.f && psi(&phi_j).f > 0. { trial_value(&psi(&phi_l), &psi(&phi_j), &psi(&phi_u), bracketed) } else { trial_value(&phi_l, &phi_j, &phi_u, bracketed) };
+        let res = if stage1 && phi_j.f <= phi_l.f && psi(&phi_j).f > 0.
+                                    { trial_value(&psi(&phi_l), &psi(&phi_j), &psi(&phi_u), bracketed) } else
+                                    { trial_value(&phi_l, &phi_j, &phi_u, bracketed) };
+        *a = res.0;
+        let caseno = res.1;
 
         bracketed = bracketed || (caseno == 1 || caseno == 2);
         let width = (phi_u.a - phi_l.a).abs();
@@ -262,16 +265,16 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
                 else {
                     // The magic constant is used in the paper (Section 4, Case 3)
                     let safeguard1 = phi_l.a + 0.66 * (phi_u.a - phi_l.a);
-                    *a = if phi_l.a < phi_u.a { f64::min(safeguard1, a) } else { f64::max(safeguard1, a) };
+                    *a = if phi_l.a < phi_u.a { f64::min(safeguard1, *a) } else { f64::max(safeguard1, *a) };
                     let safeguard2 = phi_l.a + 0.001 * (phi_u.a - phi_l.a);
-                    *a = if phi_l.a > phi_u.a { f64::min(safeguard2, a) } else { f64::max(safeguard2, a) };
+                    *a = if phi_l.a > phi_u.a { f64::min(safeguard2, *a) } else { f64::max(safeguard2, *a) };
                 }
             }
             width_prev = width;
         }
 
         // Force the step to be within the interval bounds
-        *a = if phi_l.a < phi_u.a  {f64::max(phi_l.a, f64::min(phi_u.a, a))} else {f64::min(phi_l.a, f64::max(phi_u.a, a))};
+        *a = if phi_l.a < phi_u.a { f64::max(phi_l.a, f64::min(phi_u.a, *a)) } else { f64::min(phi_l.a, f64::max(phi_u.a, *a)) };
 
         k += 1;
     }
@@ -283,8 +286,8 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
 /* Routine for efficient line-search from
  * Jorge Nocedal Stephen J. Wright "Numerical Optimization" (2nd Edition)
  * Algorithm 3.5 (Line Search Algorithm) and Algorithm 3.6 (Zoom) */
-pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
-                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize, iter_max: usize)
+pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, settings: &Settings, eval: &mut usize, iter_max: usize)
                                                -> bool
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
@@ -295,8 +298,8 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
     let eta = settings.eta;
 
     let init_step = *a;
-    let mut phi_l : Point = phi_0.clone();
-    let mut phi_u : Point = Default::default();
+    let mut phi_l: Point = phi_0.clone();
+    let mut phi_u: Point = Point { a: 0., f: 0., d: 0. };
 
     let mut k = 1;
 
@@ -319,12 +322,12 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
         }
 
         // Update a with a value between a and a_max
-        *a = 0.5 * (1. - a);
+        *a = 0.5 * (1. - *a);
         phi_l = phi_u;
         k += 1;
     }
 
-    let mut phi_j: Point = Default::default();
+    let mut phi_j: Point = Point { a: 0., f: 0., d: 0. };
 
     k = 1;
     // Zoom phase (when main loop above succeeds) - Algorithm 3.6 (Zoom)
@@ -339,7 +342,7 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
             if curvature_condition(phi_0, &phi_j, eta) {
                 return true;
             }
-            if (phi_j.d * (phi_u.a - phi_l.a) >= 0. {
+            if phi_j.d * (phi_u.a - phi_l.a) >= 0. {
                 phi_u = phi_l;
             }
 
@@ -353,7 +356,7 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
     return false;
 }
 
-pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
                                   g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
                                   -> bool
     where
@@ -365,9 +368,8 @@ pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f6
             line_search_simple(&ef, &gf, &p, x, x_new, g, f, a, d, k_out, &settings, eval)
         }
         LineSearchAlg::Backtracking => {
-            //line_search_backtracking(&ef, &gf, &p, x, x_new, g, f, a, d, k_out, &settings, eval);
-            println!("ERROR: Backtracking line_search is not implemented yet");
-            return false;
+            return !line_search_more_thuente(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, k_out, settings, eval, 10)
+                && !line_search_backtracking(&ef, &gf, phi_0, &p, x, x_new, g, f, a, d, &settings, eval, 30);
         }
     }
 }
