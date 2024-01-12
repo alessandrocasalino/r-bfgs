@@ -9,6 +9,7 @@ fn test_sphere_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, d: i32| {
@@ -61,6 +62,7 @@ fn test_rosenbrock_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, d: i32| {
@@ -93,7 +95,8 @@ fn test_rosenbrock_function() {
 
     let d: i32 = 2;
     let mut x = vec![-1.2, 1.0];
-    bfgs::get_minimum(&ef, &gf, &mut x, d, &settings);
+    let result = bfgs::get_minimum(&ef, &gf, &mut x, d, &settings);
+    assert_ne!(result, None, "Result not found");
     let cmp = vec![1., 1.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.001);
 
@@ -117,6 +120,7 @@ fn test_himmelblau_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let d: i32 = 2;
@@ -158,6 +162,7 @@ fn test_three_hump_camel_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let d: i32 = 2;
@@ -208,6 +213,7 @@ fn test_mccoormic_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let d: i32 = 2;
@@ -249,6 +255,7 @@ fn test_styblinski_tang_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, d: i32| {
@@ -317,6 +324,7 @@ fn test_beale_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, _d: i32| {
@@ -384,7 +392,7 @@ fn test_goldstein_price_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
-    settings.line_search = LineSearchAlg::Simple;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |r: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, _d: i32| {
@@ -429,7 +437,7 @@ fn test_goldstein_price_function() {
     check_result(x, cmp, d as usize);
 
     let d: i32 = 2;
-    let mut x = vec![0., 1.0];
+    let mut x = vec![0., 1.];
     let result = bfgs::get_minimum(&ef, &gf, &mut x, d, &settings);
     assert_ne!(result, None, "Result not found");
     let cmp = vec![0., -1.]; // Global minimum
@@ -444,6 +452,7 @@ fn test_booth_function() {
     let mut settings: bfgs::settings::Settings = Default::default();
 
     settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
     settings.verbose = false;
 
     let ef = |r: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, _d: i32| {

@@ -50,7 +50,6 @@ pub(crate) fn line_search_simple<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut
                 a_init *= 10.;
                 *a = a_init;
             } else {
-                eprintln!("ERROR: Can not find a suitable value for a");
                 return false;
             }
         }
@@ -88,7 +87,7 @@ fn find_cubic_minimizer(mut a: f64, mut fa: f64, mut ga: f64, mut b: f64, mut fb
         mem::swap(&mut fa, &mut fb);
         mem::swap(&mut ga, &mut gb);
     }
-    let z = 3. * (fa - fb) / (b - a) + ga - gb;
+    let z = 3. * (fa - fb) / (b - a) + ga + gb;
     let d = z * z - ga * gb;
     if d <= 0. {
         // No minumum in the interval, +inf here because of the linesearch nature
@@ -100,7 +99,7 @@ fn find_cubic_minimizer(mut a: f64, mut fa: f64, mut ga: f64, mut b: f64, mut fb
 }
 
 fn find_quadratic_minimizer_3(a: f64, fa: f64, ga: f64, b: f64, fb: f64) -> f64 {
-    a + (((b - a) * (b - a)) * ga) / (2. * (fa - fb + (b - a) * ga))
+    a + (b - a) * (b - a) * ga / (2. * (fa - fb + (b - a) * ga))
 }
 
 /// Minimizer of the quadratic function that interpolates f(a), f'(a), f(b) within the
@@ -146,23 +145,23 @@ fn trial_value(l: &Point, t: &Point, u: &Point, bracketed: bool) -> (f64, u32) {
 }
 
 /// Update the value of the energy and the gradient in the Point structure
-pub(crate) fn update_function<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
-                                      g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, phi: &mut Point, eval: &mut usize)
+pub(crate) fn update_function<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
+                                      g: &mut Vec<f64>, f: &mut f64, a: f64, d: i32, phi: &mut Point, eval: &mut usize)
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32) {
     unsafe { cblas::dcopy(d, x, 1, x_new, 1) };
-    unsafe { cblas::daxpy(d, *a, p, 1, x_new, 1) };
+    unsafe { cblas::daxpy(d, a, p, 1, x_new, 1) };
 
     ef(x_new, g, f, d);
     gf(x_new, g, f, d);
     *eval += 1;
 
-    *phi = Point { a: *a, f: *f, d: unsafe { cblas::ddot(d, g, 1, p, 1) } };
+    *phi = Point { a: a, f: *f, d: unsafe { cblas::ddot(d, g, 1, p, 1) } };
 }
 
 /// Algorithm for efficient line search from J. J. More and D. J. Thuente, Line search algorithms with guaranteed sufficient decrease, ACM Transactions on Mathematical Software, 20 (1994)
-pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
                                                g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize, iter_max: usize)
                                                -> bool
     where
@@ -201,7 +200,7 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
         if !bracketed {
             phi_u.a = *a + 4. * (*a - phi_l.a);
         }
-        update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_j, eval);
+        update_function(ef, gf, p, x, x_new, g, f, *a, d, &mut phi_j, eval);
         // Change the sign of the derivative to be consistent with paper notation
         phi_j.d *= -1.;
 
@@ -286,7 +285,7 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
 /* Routine for efficient line-search from
  * Jorge Nocedal Stephen J. Wright "Numerical Optimization" (2nd Edition)
  * Algorithm 3.5 (Line Search Algorithm) and Algorithm 3.6 (Zoom) */
-pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
+pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
                                                g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, settings: &Settings, eval: &mut usize, iter_max: usize)
                                                -> bool
     where
@@ -306,7 +305,7 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, 
     // Main Line Search - Algorithm 3.5 (Line Search Algorithm)
     // From the book notation: Phi_u = Phi(alpha_j) and Phi_l = Phi_(alpha_(j-1))
     while k <= iter_max {
-        update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_u, eval);
+        update_function(ef, gf, p, x, x_new, g, f, *a, d, &mut phi_u, eval);
 
         if !sufficient_decrease(phi_0, &phi_u, mu) || (k > 1 && phi_u.f >= phi_l.f) {
             // Go to the zoom phase
@@ -334,7 +333,7 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, 
     while k <= iter_max {
         *a = (phi_l.a + phi_u.a) / 2.;
 
-        update_function(ef, gf, p, x, x_new, g, f, a, d, &mut phi_j, eval);
+        update_function(ef, gf, p, x, x_new, g, f, *a, d, &mut phi_j, eval);
 
         if !sufficient_decrease(phi_0, &phi_j, mu) || phi_j.f >= phi_l.f {
             phi_u = phi_j;
@@ -367,9 +366,14 @@ pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>,
         LineSearchAlg::Simple => {
             line_search_simple(&ef, &gf, &p, x, x_new, g, f, a, d, k_out, &settings, eval)
         }
+        /* Find a according to Wolfe's condition:
+         * - more_thuente: check if this can be used to find a (if yes use that a value)
+         * - backtracking: otherwise evaluate the second with starting a from the first
+         * This ensures that most of the steps have a = a_max = 1
+         */
         LineSearchAlg::Backtracking => {
-            return !line_search_more_thuente(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, k_out, settings, eval, 10)
-                && !line_search_backtracking(&ef, &gf, phi_0, &p, x, x_new, g, f, a, d, &settings, eval, 30);
+            line_search_more_thuente(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, k_out, settings, eval, 10) ||
+                line_search_backtracking(&ef, &gf, phi_0, &p, x, x_new, g, f, a, d, &settings, eval, 30)
         }
     }
 }

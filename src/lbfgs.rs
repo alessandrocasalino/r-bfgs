@@ -154,14 +154,10 @@ pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Sett
 
         // Save the value of Phi_0 to be used for both line_search
         let phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
-        // TODO: implement better line_search
-        /* Find a according to Wolfe's condition:
-         * - more_thuente: check if this can be used to find a (if yes use that a value)
-         * - backtracking: otherwise evaluate the second with starting a from the first
-         * This ensures that most of the steps have a = a_max = 1
-         * NOTE: line_search also updates f
-         */
+
+        // Perform line search (updating a)
         if !line_search::line_search(&ef, &gf, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
+            eprintln!("ERROR: Line search not converging");
             return None;
         }
 
