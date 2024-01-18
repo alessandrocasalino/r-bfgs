@@ -25,7 +25,7 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut V
 }
 
 #[allow(non_snake_case)]
-pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Settings)
+pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
                            -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
@@ -38,6 +38,9 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, d: i32, settings: &Setti
     let part = settings.part;
     // Verbose (log)
     let verbose = settings.verbose;
+
+    // Get the dimension
+    let d=x.len() as i32;
 
     // Function update evaluations
     let mut eval: usize = 0;
