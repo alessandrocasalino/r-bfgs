@@ -201,7 +201,7 @@ fn test_three_hump_camel_function() {
 }
 
 #[test]
-fn test_mccoormic_function() {
+fn test_mccoormick_function() {
     use bfgs;
 
     // Create settings with default parameters
