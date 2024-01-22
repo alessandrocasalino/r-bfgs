@@ -14,3 +14,8 @@ float_eq = "*"
 
 [dev-dependencies]
 rand = "*"
+criterion = { version = "*", features = ["html_reports"] }
+
+[[bench]]
+name = "bfgs"
+harness = false
