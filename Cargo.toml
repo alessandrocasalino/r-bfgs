@@ -19,3 +19,15 @@ criterion = { version = "*", features = ["html_reports"] }
 [[bench]]
 name = "bfgs"
 harness = false
+
+[[bench]]
+name = "lbfgs"
+harness = false
+
+[[bench]]
+name = "lbfgs_backtracking"
+harness = false
+
+[[bench]]
+name = "bfgs_backtracking"
+harness = false
