@@ -14,7 +14,7 @@ fn bench_bfgs_backtracking(c: &mut Criterion) {
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Lbfgs;
+    settings.minimization = MinimizationAlg::Bfgs;
     settings.line_search = LineSearchAlg::Backtracking;
 
     let mut group = c.benchmark_group("bfgs_backtracking");
