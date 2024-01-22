@@ -231,8 +231,7 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
         stage1 = stage1 && (psi(&phi_j).f > 0. || phi_j.d < f64::min(mu, eta) * phi_0.d);
         // TODO: check std::tie analogue in Rust
         let res = if stage1 && phi_j.f <= phi_l.f && psi(&phi_j).f > 0.
-                                    { trial_value(&psi(&phi_l), &psi(&phi_j), &psi(&phi_u), bracketed) } else
-                                    { trial_value(&phi_l, &phi_j, &phi_u, bracketed) };
+        { trial_value(&psi(&phi_l), &psi(&phi_j), &psi(&phi_u), bracketed) } else { trial_value(&phi_l, &phi_j, &phi_u, bracketed) };
         *a = res.0;
         let caseno = res.1;
 

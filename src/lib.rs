@@ -99,7 +99,7 @@ pub fn get_minimum<Ef>(ef: &Ef, x: &mut Vec<f64>, settings: &Settings)
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
 pub fn get_minimum_with_grad<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                           -> Option<f64>
+                                     -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
@@ -107,8 +107,8 @@ pub fn get_minimum_with_grad<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, setting
     do_bfgs(ef, gf, x, settings)
 }
 
-fn do_bfgs<Ef, Gf> (ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-    -> Option<f64>
+fn do_bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
+                   -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)

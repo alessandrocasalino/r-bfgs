@@ -14,31 +14,33 @@ fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<
 
     // If no points in history, estimate the Hessian
     if m < 1 {
-        unsafe{ cblas::dcopy(d, g, 1, p, 1); }
-        unsafe{ cblas::dscal(d, -1., p, 1); }
-        return
+        unsafe { cblas::dcopy(d, g, 1, p, 1); }
+        unsafe { cblas::dscal(d, -1., p, 1); }
+        return;
     }
 
     // Temporary variables for two-loops
-    let mut beta : f64;
+    let mut beta: f64;
 
     // Starting value for p (current gradient)
-    unsafe{ cblas::dcopy(d, g, 1, p, 1); }
+    unsafe { cblas::dcopy(d, g, 1, p, 1); }
 
     // Forward loop
     for i in 0..m {
         let h = &history[i];
-        alpha[i] = unsafe{ -cblas::ddot(d, &*h.s, 1, p, 1) /
-            cblas::ddot(d, &*h.y, 1, &*h.s, 1) };
-        unsafe{ cblas::daxpy(d, alpha[i], &*h.y, 1, p, 1); }
+        alpha[i] = unsafe {
+            -cblas::ddot(d, &*h.s, 1, p, 1) /
+                cblas::ddot(d, &*h.y, 1, &*h.s, 1)
+        };
+        unsafe { cblas::daxpy(d, alpha[i], &*h.y, 1, p, 1); }
     }
 
     // Compute first version of p with gamma
     // If M1QN3 is not used, the "Hessian" is considered a scalar
     if !settings.m1qn3 {
         let h = &history[0];
-        let y = unsafe{ cblas::dnrm2(d, &*h.y, 1)};
-        unsafe{ cblas::dscal(d, -cblas::ddot(d, &*h.y, 1, &*h.s, 1) / (y * y), p, 1); }
+        let y = unsafe { cblas::dnrm2(d, &*h.y, 1) };
+        unsafe { cblas::dscal(d, -cblas::ddot(d, &*h.y, 1, &*h.s, 1) / (y * y), p, 1); }
     } else {
         for i in 0..d {
             p[i as usize] = -H[i as usize] * p[i as usize];
@@ -48,9 +50,11 @@ fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<
     // Backward loop
     for i in 0..m {
         let h = &history[m - 1 - i];
-        beta = unsafe{ cblas::ddot(d, &*h.y, 1, p, 1) /
-            cblas::ddot(d, &*h.y, 1, &*h.s, 1) };
-        unsafe{ cblas::daxpy(d, -beta + alpha[m - 1 - i], &*h.s, 1, p, 1); }
+        beta = unsafe {
+            cblas::ddot(d, &*h.y, 1, p, 1) /
+                cblas::ddot(d, &*h.y, 1, &*h.s, 1)
+        };
+        unsafe { cblas::daxpy(d, -beta + alpha[m - 1 - i], &*h.s, 1, p, 1); }
     }
 }
 
@@ -65,7 +69,7 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
     let mut dinvss = 0.;
     let mut dyy = 0.;
 
-    let ys = unsafe {cblas::ddot(d, y, 1, s, 1)};
+    let ys = unsafe { cblas::ddot(d, y, 1, s, 1) };
 
     for i in 0..d {
         dinvss += s[i as usize] * s[i as usize] / H[i as usize];
@@ -73,7 +77,7 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
     }
 
     for i in 0..d {
-        H[i as usize] = 1./(dyy / (ys * H[i as usize]) + y[i as usize] * y[i as usize] / ys -
+        H[i as usize] = 1. / (dyy / (ys * H[i as usize]) + y[i as usize] * y[i as usize] / ys -
             dyy * s[i as usize] * s[i as usize] / (ys * dinvss * H[i as usize] * H[i as usize]));
     }
 }
@@ -84,7 +88,7 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
 /// constant, as in equation (7.20)
 #[allow(non_snake_case)]
 pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                    -> Option<f64>
+                     -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
         Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
@@ -95,7 +99,7 @@ pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
     let verbose = settings.verbose;
 
     // Get the dimension
-    let d=x.len() as i32;
+    let d = x.len() as i32;
 
     // Function update evaluations
     let mut eval: usize = 0;

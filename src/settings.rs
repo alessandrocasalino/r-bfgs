@@ -51,7 +51,7 @@ pub struct Settings {
     /// L-BFGS number of history points
     pub history_depth: usize,
     /// m1qn3 diagonal matrix compute
-    pub m1qn3 : bool,
+    pub m1qn3: bool,
 
     /// Try to estimate the value of a
     pub estimate_a: bool,
