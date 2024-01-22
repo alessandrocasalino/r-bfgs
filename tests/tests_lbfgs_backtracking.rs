@@ -22,7 +22,7 @@ fn test_sphere_function() {
         let result = bfgs::get_minimum(&test_functions::sphere, &mut x, &settings);
         assert_ne!(result, None, "Result not found");
         let cmp = vec![0.; d];
-        test_utils::check_result(x, cmp, d);
+        test_utils::check_result(x, cmp);
     }
 }
 
@@ -83,7 +83,7 @@ fn test_three_hump_camel_function() {
     let result = bfgs::get_minimum(&test_functions::three_hump_camel, &mut x, &settings);
     assert_ne!(result, None, "Result not found");
     let cmp = vec![0., 0.];
-    test_utils::check_result(x, cmp, 2);
+    test_utils::check_result(x, cmp);
 }
 
 #[test]
@@ -194,14 +194,14 @@ fn test_goldstein_price_function() {
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &mut x, &settings);
     assert_ne!(result, None, "Result not found");
     let cmp = vec![0., -1.];
-    test_utils::check_result(x, cmp, 2);
+    test_utils::check_result(x, cmp);
 
     // Global minimum
     let mut x = vec![0., 1.0];
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &mut x, &settings);
     assert_ne!(result, None, "Result not found");
     let cmp = vec![0., -1.];
-    test_utils::check_result(x, cmp, 2);
+    test_utils::check_result(x, cmp);
 }
 
 #[test]
@@ -239,4 +239,21 @@ fn test_booth_function() {
     assert_ne!(result, None, "Result not found");
     let cmp = vec![1., 3.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
+}
+
+#[test]
+#[ignore]
+fn test_matyas_function() {
+    use bfgs;
+
+    let mut settings: bfgs::settings::Settings = Default::default();
+    settings.minimization = MinimizationAlg::Lbfgs;
+    settings.line_search = LineSearchAlg::Backtracking;
+
+    // Global minimum
+    let mut x = vec![0., -1.];
+    let result = bfgs::get_minimum(&test_functions::matyas, &mut x, &settings);
+    assert_ne!(result, None, "Result not found");
+    let cmp = vec![0., 0.];
+    test_utils::check_result(x, cmp);
 }

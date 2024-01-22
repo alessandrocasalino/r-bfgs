@@ -75,3 +75,11 @@ pub fn booth(r: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, _d: i32) {
     let y = r[1];
     *f = (x + 2. * y - 7.) * (x + 2. * y - 7.) + (2. * x + y - 5.) * (2. * x + y - 5.);
 }
+
+#[allow(unused)]
+// Global minimum: [0., 0.]
+pub fn matyas(r: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, _d: i32) {
+    let x = r[0];
+    let y = r[1];
+    *f = 0.26 * (x *x + y*y) - 0.48*x*y;
+}
