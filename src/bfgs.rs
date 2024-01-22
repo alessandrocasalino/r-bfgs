@@ -25,7 +25,7 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut V
 }
 
 #[allow(non_snake_case)]
-pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
+pub fn bfgs<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settings: &Settings)
                     -> Option<f64>
     where
         Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
@@ -52,8 +52,8 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
     let mut g: Vec<f64> = vec![0.; d as usize];
 
     // Update energy and gradient
-    ef(x, &g, &mut f, d);
-    gf(x, &mut g, &f, d);
+    fn_function(x, &g, &mut f, d);
+    fn_gradient(x, &mut g, &f, d);
     eval += 1;
 
     // Hessian estimation
@@ -107,7 +107,7 @@ pub fn bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
         let phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
 
         // Perform line search (updating a)
-        if !line_search::line_search(&ef, &gf, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
+        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
             eprintln!("ERROR: Line search not converging");
             return None;
         }

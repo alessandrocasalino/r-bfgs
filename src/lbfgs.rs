@@ -87,11 +87,11 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
 /// diagonal Hessian with the same elements, i.e., an identity matrix multiplied by a
 /// constant, as in equation (7.20)
 #[allow(non_snake_case)]
-pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                     -> Option<f64>
+pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                                 -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
+        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
     // Settings
     let iter_max = settings.iter_max;
@@ -111,8 +111,8 @@ pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
     let mut g: Vec<f64> = vec![0.; d as usize];
 
     // Update energy and gradient
-    ef(x, &g, &mut f, d);
-    gf(x, &mut g, &f, d);
+    fn_function(x, &g, &mut f, d);
+    fn_gradient(x, &mut g, &f, d);
     eval += 1;
 
     // Hessian estimation
@@ -163,7 +163,7 @@ pub fn lbfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
         let phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
 
         // Perform line search (updating a)
-        if !line_search::line_search(&ef, &gf, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
+        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
             eprintln!("ERROR: Line search not converging");
             return None;
         }

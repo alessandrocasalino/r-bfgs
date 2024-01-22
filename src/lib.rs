@@ -22,11 +22,12 @@ use crate::settings::MinimizationAlg;
 ///
 /// # Arguments
 ///
-/// * `ef` - A closure representing the energy function.
+/// * `fn_function` - A function representing the function to minimize.
 ///    It takes in the current position `x`, the gradient vector `g`,
-///    the energy value `f`, and the dimension size `d` as arguments.
+///    the function value `f`, and the dimension size `d` as arguments.
 ///    The closure is expected to update `f` with the current values
 ///    at `x`.
+///    This can be a function (passed by &) or a closure.
 ///
 /// * `x` - A mutable reference to the initial position vector.
 ///
@@ -41,10 +42,10 @@ use crate::settings::MinimizationAlg;
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
-pub fn get_minimum<Ef>(ef: &Ef, x: &mut Vec<f64>, settings: &Settings)
+pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings: &Settings)
                        -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32)
+        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32)
 {
     // Default gradient
     let gf = |x: &Vec<f64>, g: &mut Vec<f64>, _f: &f64, d: i32| {
@@ -57,15 +58,15 @@ pub fn get_minimum<Ef>(ef: &Ef, x: &mut Vec<f64>, settings: &Settings)
             let mut f2 = 0.;
             x_for[i as usize] += h;
             x_bck[i as usize] -= h;
-            ef(&x_bck, g, &mut f1, d);
-            ef(&x_for, g, &mut f2, d);
+            fn_function(&x_bck, g, &mut f1, d);
+            fn_function(&x_for, g, &mut f2, d);
             g[i as usize] = (f2 - f1) / (2. * h);
             x_for[i as usize] -= h;
             x_bck[i as usize] += h;
         }
     };
 
-    do_bfgs(ef, &gf, x, settings)
+    do_bfgs(fn_function, &gf, x, settings)
 }
 
 /// Calculates the minimum of a function using the BFGS algorithm,
@@ -77,16 +78,18 @@ pub fn get_minimum<Ef>(ef: &Ef, x: &mut Vec<f64>, settings: &Settings)
 ///
 /// # Arguments
 ///
-/// * `ef` - A closure representing the energy function.
+/// * `fn_function` - A function representing the function to minimize.
 ///    It takes in the current position `x`, the gradient vector `g`,
-///    the energy value `f`, and the dimension size `d` as arguments.
+///    the function value `f`, and the dimension size `d` as arguments.
 ///    The closure is expected to update `f` with the current values
 ///    at `x`.
+///    This can be a function (passed by &) or a closure.
 ///
-/// * `gf` - A closure representing the gradient function. It takes in
-///    the current position `x`, the gradient vector `g`, the energy
-///    value `f`, and the dimension size `d` as arguments. The closure
-///    is expected to update `g` with the current value at `x`.
+/// * `fn_gradient` - A function representing the gradient function.
+///    It takes in the current position `x`, the gradient vector `g`, the
+///    function value `f`, and the dimension size `d` as arguments. The
+///    closure is expected to update `g` with the current value at `x`.
+///    This can be a function (passed by &) or a closure.
 ///
 /// * `x` - A mutable reference to the initial position vector.
 ///
@@ -98,20 +101,20 @@ pub fn get_minimum<Ef>(ef: &Ef, x: &mut Vec<f64>, settings: &Settings)
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
-pub fn get_minimum_with_grad<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                                     -> Option<f64>
+pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                                                 -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
+        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
-    do_bfgs(ef, gf, x, settings)
+    do_bfgs(fn_function, fn_gradient, x, settings)
 }
 
-fn do_bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                   -> Option<f64>
+fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                               -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
+        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
 {
     // Check value of settings
     if settings.mu > settings.eta {
@@ -123,20 +126,20 @@ fn do_bfgs<Ef, Gf>(ef: &Ef, gf: &Gf, x: &mut Vec<f64>, settings: &Settings)
     match settings.minimization {
         MinimizationAlg::Bfgs => {
             use crate::bfgs::bfgs;
-            bfgs(ef, gf, x, settings)
+            bfgs(fn_function, fn_gradient, x, settings)
         }
         MinimizationAlg::Lbfgs => {
             use crate::lbfgs::lbfgs;
-            lbfgs(ef, gf, x, settings)
+            lbfgs(fn_function, fn_gradient, x, settings)
         }
         MinimizationAlg::BfgsBackup => {
             use crate::bfgs::bfgs;
-            let r = bfgs(ef, gf, x, settings);
+            let r = bfgs(fn_function, fn_gradient, x, settings);
             match r {
                 Some(f) => Some(f),
                 None => {
                     use crate::lbfgs::lbfgs;
-                    match lbfgs(ef, gf, x, settings) {
+                    match lbfgs(fn_function, fn_gradient, x, settings) {
                         Some(f) => Some(f),
                         None => None
                     }
