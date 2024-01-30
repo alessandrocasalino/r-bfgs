@@ -1,5 +1,6 @@
 /// Enumerator for minimization algorithm
 pub enum MinimizationAlg {
+    GradientDescent,
     Bfgs,
     Lbfgs,
     /// Use L-BFGS algorithm if BFGS fails

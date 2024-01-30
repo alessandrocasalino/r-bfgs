@@ -1,4 +1,5 @@
-// allow(unused) flag to avoid compiler warning
+// Minimization functions from https://www.sfu.ca/~ssurjano/optimization.html
+// Note: allow(unused) flag to avoid compiler warning
 
 #[allow(unused)]
 // Global minimum: [0., 0.., ...]

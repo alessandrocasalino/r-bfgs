@@ -10,6 +10,7 @@ mod lbfgs;
 mod line_search;
 mod exit_condition;
 mod log;
+pub mod gradient_descent;
 
 use crate::settings::Settings;
 use crate::settings::MinimizationAlg;
@@ -124,6 +125,10 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
 
     // Handle different minimization methods
     match settings.minimization {
+        MinimizationAlg::GradientDescent => {
+            use crate::gradient_descent::gradient_descent;
+            gradient_descent(fn_function, fn_gradient, x, settings)
+        }
         MinimizationAlg::Bfgs => {
             use crate::bfgs::bfgs;
             bfgs(fn_function, fn_gradient, x, settings)
