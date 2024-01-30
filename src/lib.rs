@@ -42,6 +42,35 @@ use crate::settings::MinimizationAlg;
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
+///
+/// # Examples
+///
+/// ```
+/// // Import r-bfgs library
+/// use bfgs;
+/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+///
+/// // Create the settings with default parameters
+/// let mut settings: bfgs::settings::Settings = Default::default();
+/// // And eventually change some of the settings
+/// settings.minimization = MinimizationAlg::Lbfgs;
+/// settings.line_search = LineSearchAlg::Backtracking;
+///
+/// // Function to be minimized
+/// let function = |x: &[f64], g: &[f64], f: &mut f64, d: i32| {
+///     *f = 0.;
+///     for v in x {
+///       *f += v * v;
+///     }
+/// };
+///
+/// // Set the starting point
+/// let mut x = vec![0., -1.];
+/// // Find the minimum
+/// let result = bfgs::get_minimum(&function, &mut x, &settings);
+/// // Check if the result is found
+/// assert_ne!(result, None, "Result not found");
+/// ```
 #[allow(non_snake_case)]
 pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings: &Settings)
                              -> Option<f64>
@@ -101,6 +130,42 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
+///
+/// # Examples
+///
+/// ```
+/// // Import r-bfgs library
+/// use bfgs;
+/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+///
+/// // Create the settings with default parameters
+/// let mut settings: bfgs::settings::Settings = Default::default();
+/// // And eventually change some of the settings
+/// settings.minimization = MinimizationAlg::Lbfgs;
+/// settings.line_search = LineSearchAlg::Backtracking;
+///
+/// // Function to be minimized
+/// let function = |x: &[f64], g: &[f64], f: &mut f64, _d: i32| {
+///     *f = 0.;
+///     for v in x {
+///       *f += v * v;
+///     }
+/// };
+///
+/// // Gradient
+/// let gradient = |x: &[f64], g: &mut [f64], f: &f64, d: i32| {
+///     for i in 0..d as usize {
+///       g[i] = 2. * x[i];
+///     }
+/// };
+///
+/// // Set the starting point
+/// let mut x = vec![0., -1.];
+/// // Find the minimum
+/// let result = bfgs::get_minimum_with_grad(&function, &gradient, &mut x, &settings);
+/// // Check if the result is found
+/// assert_ne!(result, None, "Result not found");
+/// ```
 #[allow(non_snake_case)]
 pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
                                                  -> Option<f64>
