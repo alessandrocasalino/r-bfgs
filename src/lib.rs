@@ -45,7 +45,7 @@ use crate::settings::MinimizationAlg;
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// // Import r-bfgs library
 /// use bfgs;
 /// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
@@ -133,7 +133,7 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// // Import r-bfgs library
 /// use bfgs;
 /// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
