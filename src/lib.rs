@@ -44,16 +44,16 @@ use crate::settings::MinimizationAlg;
 /// `None` if the algorithm does not converge.
 #[allow(non_snake_case)]
 pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings: &Settings)
-                       -> Option<f64>
+                             -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32)
 {
     // Default gradient
-    let gf = |x: &Vec<f64>, g: &mut Vec<f64>, _f: &f64, d: i32| {
+    let gf = |x: &[f64], g: &mut [f64], _f: &f64, d: i32| {
         // Finite difference derivative
         let h = 1e-5;
-        let mut x_for = x.clone();
-        let mut x_bck = x.clone();
+        let mut x_for: Vec<f64> = x.to_vec();
+        let mut x_bck: Vec<f64> = x.to_vec();
         for i in 0..d {
             let mut f1 = 0.;
             let mut f2 = 0.;
@@ -105,8 +105,8 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
                                                  -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     do_bfgs(fn_function, fn_gradient, x, settings)
 }
@@ -114,8 +114,8 @@ pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_grad
 fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
                                -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Check value of settings
     if settings.mu > settings.eta {
@@ -144,10 +144,7 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
                 Some(f) => Some(f),
                 None => {
                     use crate::lbfgs::lbfgs;
-                    match lbfgs(fn_function, fn_gradient, x, settings) {
-                        Some(f) => Some(f),
-                        None => None
-                    }
+                    lbfgs(fn_function, fn_gradient, x, settings)
                 }
             }
         }

@@ -1,10 +1,11 @@
 use crate::Settings;
 
-pub(crate) fn gradient_descent<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                                                  -> Option<f64>
+pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
+                                                   x: &mut Vec<f64>, settings: &Settings)
+                                                   -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Settings
     let iter_max = settings.iter_max;
@@ -39,14 +40,14 @@ pub(crate) fn gradient_descent<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &m
         iter += 1;
 
         // Update the position
-        unsafe{ cblas::daxpy(d, - alpha, &*g, 1, &mut *x, 1);}
+        unsafe { cblas::daxpy(d, -alpha, &g, 1, &mut *x, 1); }
 
         // Update energy and gradient
         fn_function(x, &g, &mut f, d);
         fn_gradient(x, &mut g, &f, d);
         eval += 1;
 
-        let g_norm = unsafe { cblas::dnrm2(d, &*g, 1) };
+        let g_norm = unsafe { cblas::dnrm2(d, &g, 1) };
         if g_norm < settings.gtol {
             if verbose {
                 println!("Exit condition reached:");
@@ -60,7 +61,8 @@ pub(crate) fn gradient_descent<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &m
     if verbose {
         println!("Maximum number of iterations reached");
     }
-    return None;
+
+    None
 }
 
 

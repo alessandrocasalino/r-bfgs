@@ -1,16 +1,11 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use bfgs::settings::MinimizationAlg;
 
-// Global minimum: [0., 0.., ...]
-pub fn sphere(x: &Vec<f64>, _g: &Vec<f64>, f: &mut f64, d: i32) {
-    *f = 0.;
-    for i in 0..d as usize {
-        *f += x[i] * x[i];
-    }
-}
+mod bench_functions;
+
+use bench_functions::sphere;
 
 fn bench_lbfgs(c: &mut Criterion) {
-
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();

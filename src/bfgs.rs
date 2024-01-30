@@ -1,8 +1,8 @@
 use crate::{exit_condition, line_search};
 use crate::settings::Settings;
 
-#[allow(non_snake_case)]
-fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut Vec<f64>, C: &mut Vec<f64>,
+#[allow(non_snake_case, clippy::too_many_arguments)]
+fn Hessian(H: &mut [f64], s: &[f64], y: &[f64], I: &[f64], B: &mut Vec<f64>, C: &mut Vec<f64>,
            d: i32, layout: cblas::Layout, part: cblas::Part) {
     let rho: f64 = 1. / unsafe { cblas::ddot(d, y, 1, s, 1) };
 
@@ -25,11 +25,11 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, I: &Vec<f64>, B: &mut V
 }
 
 #[allow(non_snake_case)]
-pub fn bfgs<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settings: &Settings)
-                    -> Option<f64>
+pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                                -> Option<f64>
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Settings
     let iter_max = settings.iter_max;
@@ -62,7 +62,7 @@ pub fn bfgs<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settin
     for i in 0..d {
         I[(i * (d + 1)) as usize] = 1.;
     }
-    unsafe { cblas::dcopy(d * d, &*I, 1, &mut *H, 1); }
+    unsafe { cblas::dcopy(d * d, &I, 1, &mut H, 1); }
 
 
     // Search direction
@@ -96,35 +96,35 @@ pub fn bfgs<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settin
         k += 1;
 
         // Store current values
-        unsafe { cblas::dcopy(d, &*x, 1, &mut *s, 1); }
-        unsafe { cblas::dcopy(d, &*g, 1, &mut *y, 1); }
+        unsafe { cblas::dcopy(d, &*x, 1, &mut s, 1); }
+        unsafe { cblas::dcopy(d, &g, 1, &mut y, 1); }
         f_old = f;
 
         // Store current values
-        unsafe { cblas::dsymv(layout, part, d, -1., &*H, d, &*g, 1, 0., &mut *p, 1); }
+        unsafe { cblas::dsymv(layout, part, d, -1., &H, d, &g, 1, 0., &mut p, 1); }
 
         // Save the value of Phi_0 to be used for both line_search
-        let phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
+        let phi_0: line_search::Point = line_search::Point { a: 0., f, d: unsafe { cblas::ddot(d, &g, 1, &p, 1) } };
 
         // Perform line search (updating a)
-        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
+        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, settings, &mut eval) {
             eprintln!("ERROR: Line search not converging");
             return None;
         }
 
         // Update x with the new values of a
-        unsafe { cblas::dcopy(d, &*x_new, 1, &mut *x, 1); }
+        unsafe { cblas::dcopy(d, &x_new, 1, &mut *x, 1); }
 
         // Compute -s and -y
-        unsafe { cblas::daxpy(d, -1., &*x, 1, &mut *s, 1); }
-        unsafe { cblas::daxpy(d, -1., &*g, 1, &mut *y, 1); }
+        unsafe { cblas::daxpy(d, -1., &*x, 1, &mut s, 1); }
+        unsafe { cblas::daxpy(d, -1., &g, 1, &mut y, 1); }
 
         // Normalize the Hessian at first iteration
         if k == 1 {
-            let ynorm: f64 = unsafe { cblas::dnrm2(d, &*y, 1) };
+            let ynorm: f64 = unsafe { cblas::dnrm2(d, &y, 1) };
             for i in 0..d {
                 H[(i * (d + 1)) as usize] *=
-                    unsafe { cblas::ddot(d, &*y, 1, &*s, 1) } / (ynorm * ynorm);
+                    unsafe { cblas::ddot(d, &y, 1, &s, 1) } / (ynorm * ynorm);
             }
         }
 
@@ -136,7 +136,7 @@ pub fn bfgs<Ef, Gf>(fn_function: &Ef, fn_gradient: &Gf, x: &mut Vec<f64>, settin
         };
 
         // Exit condition
-        if !exit_condition::evaluate(&x, &g, f, f_old, d, &settings) {
+        if !exit_condition::evaluate(x, &g, f, f_old, d, settings) {
             break;
         }
     }
