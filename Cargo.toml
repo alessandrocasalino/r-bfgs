@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "bfgs_backtracking"
 harness = false
+
+[[bench]]
+name = "gradient_descent"
+harness = false

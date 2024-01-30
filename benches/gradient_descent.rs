@@ -16,7 +16,7 @@ fn bench_gradient_descent(c: &mut Criterion) {
     let mut settings: bfgs::settings::Settings = Default::default();
     settings.minimization = MinimizationAlg::GradientDescent;
 
-    let mut group = c.benchmark_group("Gradient Descent");
+    let mut group = c.benchmark_group("gradient_descent");
 
     for d in dims {
         group.bench_with_input(BenchmarkId::from_parameter(d), &d, |b, &d| {
