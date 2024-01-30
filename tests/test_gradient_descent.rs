@@ -13,7 +13,6 @@ fn test_sphere_function() {
     // Select the minimization algorithm
     settings.minimization = MinimizationAlg::GradientDescent;
     settings.iter_max = 1000;
-    settings.verbose = true;
 
     let dims = vec![2, 6, 20, 100, 1000];
 

@@ -25,6 +25,27 @@ fn test_sphere_function() {
 }
 
 #[test]
+fn test_sphere_function_with_gradient() {
+    use bfgs;
+
+    // Create settings with default parameters
+    let mut settings: bfgs::settings::Settings = Default::default();
+    // Select the minimization algorithm
+    settings.minimization = MinimizationAlg::Bfgs;
+
+    let dims = vec![2, 6, 20, 100, 1000];
+
+    for d in dims {
+        let mut x = vec![(); d].into_iter().map(|_| thread_rng().gen_range(-10.0..10.0)).collect();
+        let result = bfgs::get_minimum_with_gradient(&test_functions::sphere,
+                                                     &test_functions::sphere_gradient, &mut x, &settings);
+        assert_ne!(result, None, "Result not found");
+        let cmp = vec![0.; d];
+        test_utils::check_result(x, cmp);
+    }
+}
+
+#[test]
 fn test_rosenbrock_function() {
     use bfgs;
 

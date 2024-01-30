@@ -11,6 +11,14 @@ pub fn sphere(x: &[f64], _g: &[f64], f: &mut f64, _d: i32) {
 }
 
 #[allow(unused)]
+// Global minimum: [0., 0.., ...]
+pub fn sphere_gradient(x: &[f64], g: &mut [f64], f: &f64, d: i32) {
+    for i in 0..d as usize {
+        g[i] = 2. * x[i];
+    }
+}
+
+#[allow(unused)]
 // Global minimum: [1., 1., ...]
 pub fn rosenbrock(x: &[f64], _g: &[f64], f: &mut f64, d: i32) {
     *f = 0.;

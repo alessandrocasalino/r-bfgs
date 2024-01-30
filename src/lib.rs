@@ -10,7 +10,7 @@ mod lbfgs;
 mod line_search;
 mod exit_condition;
 mod log;
-pub mod gradient_descent;
+mod gradient_descent;
 
 use crate::settings::Settings;
 use crate::settings::MinimizationAlg;
@@ -162,13 +162,13 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 /// // Set the starting point
 /// let mut x = vec![0., -1.];
 /// // Find the minimum
-/// let result = bfgs::get_minimum_with_grad(&function, &gradient, &mut x, &settings);
+/// let result = bfgs::get_minimum_with_gradient(&function, &gradient, &mut x, &settings);
 /// // Check if the result is found
 /// assert_ne!(result, None, "Result not found");
 /// ```
 #[allow(non_snake_case)]
-pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                                                 -> Option<f64>
+pub fn get_minimum_with_gradient<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                                                     -> Option<f64>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
