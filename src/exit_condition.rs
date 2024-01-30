@@ -1,6 +1,6 @@
 use crate::settings::Settings;
 
-pub(crate) fn evaluate(x: &Vec<f64>, g: &Vec<f64>, f: f64, f_old: f64, d: i32, settings: &Settings) -> bool {
+pub(crate) fn evaluate(x: &[f64], g: &[f64], f: f64, f_old: f64, d: i32, settings: &Settings) -> bool {
     let g_norm = unsafe { cblas::dnrm2(d, g, 1) };
     let x_norm = unsafe { cblas::dnrm2(d, x, 1) };
 

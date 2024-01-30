@@ -9,7 +9,7 @@ mod lbfgs_deque;
 /// Jorge Nocedal Stephen J. Wright "Numerical Optimization" (2nd Edition)
 /// Algorithm 7.4 (L-BFGS two-loop recursion)
 #[allow(non_snake_case)]
-fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<f64>, H: &Vec<f64>, alpha: &mut Vec<f64>, d: i32, settings: &Settings) {
+fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut [f64], g: &[f64], H: &[f64], alpha: &mut [f64], d: i32, settings: &Settings) {
     let m = history.len();
 
     // If no points in history, estimate the Hessian
@@ -29,21 +29,21 @@ fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<
     for i in 0..m {
         let h = &history[i];
         alpha[i] = unsafe {
-            -cblas::ddot(d, &*h.s, 1, p, 1) /
-                cblas::ddot(d, &*h.y, 1, &*h.s, 1)
+            -cblas::ddot(d, &h.s, 1, p, 1) /
+                cblas::ddot(d, &h.y, 1, &h.s, 1)
         };
-        unsafe { cblas::daxpy(d, alpha[i], &*h.y, 1, p, 1); }
+        unsafe { cblas::daxpy(d, alpha[i], &h.y, 1, p, 1); }
     }
 
     // Compute first version of p with gamma
     // If M1QN3 is not used, the "Hessian" is considered a scalar
     if !settings.m1qn3 {
         let h = &history[0];
-        let y = unsafe { cblas::dnrm2(d, &*h.y, 1) };
-        unsafe { cblas::dscal(d, -cblas::ddot(d, &*h.y, 1, &*h.s, 1) / (y * y), p, 1); }
+        let y = unsafe { cblas::dnrm2(d, &h.y, 1) };
+        unsafe { cblas::dscal(d, -cblas::ddot(d, &h.y, 1, &h.s, 1) / (y * y), p, 1); }
     } else {
         for i in 0..d {
-            p[i as usize] = -H[i as usize] * p[i as usize];
+            p[i as usize] *= -H[i as usize];
         }
     }
 
@@ -51,10 +51,10 @@ fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<
     for i in 0..m {
         let h = &history[m - 1 - i];
         beta = unsafe {
-            cblas::ddot(d, &*h.y, 1, p, 1) /
-                cblas::ddot(d, &*h.y, 1, &*h.s, 1)
+            cblas::ddot(d, &h.y, 1, p, 1) /
+                cblas::ddot(d, &h.y, 1, &h.s, 1)
         };
-        unsafe { cblas::daxpy(d, -beta + alpha[m - 1 - i], &*h.s, 1, p, 1); }
+        unsafe { cblas::daxpy(d, -beta + alpha[m - 1 - i], &h.s, 1, p, 1); }
     }
 }
 
@@ -65,7 +65,7 @@ fn search_direction(history: &VecDeque<HistoryPoint>, p: &mut Vec<f64>, g: &Vec<
 /// Hessian. Since we are using a vector to store the diagonal part, we can not use blas
 /// for all computations.
 #[allow(non_snake_case)]
-fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
+fn Hessian(H: &mut [f64], s: &[f64], y: &[f64], d: i32) {
     let mut dinvss = 0.;
     let mut dyy = 0.;
 
@@ -90,8 +90,8 @@ fn Hessian(H: &mut Vec<f64>, s: &Vec<f64>, y: &Vec<f64>, d: i32) {
 pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
                                  -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Settings
     let iter_max = settings.iter_max;
@@ -152,28 +152,28 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         let mut y: Vec<f64> = vec![0.; d as usize];
 
         // Store current values
-        unsafe { cblas::dcopy(d, &*x, 1, &mut *s, 1); }
-        unsafe { cblas::dcopy(d, &*g, 1, &mut *y, 1); }
+        unsafe { cblas::dcopy(d, &*x, 1, &mut s, 1); }
+        unsafe { cblas::dcopy(d, &g, 1, &mut y, 1); }
         f_old = f;
 
         // Store current values
-        search_direction(&history, &mut p, &g, &H, &mut alpha, d, &settings);
+        search_direction(&history, &mut p, &g, &H, &mut alpha, d, settings);
 
         // Save the value of Phi_0 to be used for both line_search
-        let phi_0: line_search::Point = line_search::Point { a: 0., f: f, d: unsafe { cblas::ddot(d, &*g, 1, &mut *p, 1) } };
+        let phi_0: line_search::Point = line_search::Point { a: 0., f, d: unsafe { cblas::ddot(d, &g, 1, &p, 1) } };
 
         // Perform line search (updating a)
-        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, &settings, &mut eval) {
+        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, settings, &mut eval) {
             eprintln!("ERROR: Line search not converging");
             return None;
         }
 
         // Update x with the new values of a
-        unsafe { cblas::dcopy(d, &*x_new, 1, &mut *x, 1); }
+        unsafe { cblas::dcopy(d, &x_new, 1, &mut *x, 1); }
 
         // Compute -s and -y
-        unsafe { cblas::daxpy(d, -1., &*x, 1, &mut *s, 1); }
-        unsafe { cblas::daxpy(d, -1., &*g, 1, &mut *y, 1); }
+        unsafe { cblas::daxpy(d, -1., &*x, 1, &mut s, 1); }
+        unsafe { cblas::daxpy(d, -1., &g, 1, &mut y, 1); }
 
         // Compute the Hessian
         if settings.m1qn3 {
@@ -185,10 +185,10 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         };
 
         // Store in deque
-        fifo_operation(&mut history, s, y, &settings);
+        fifo_operation(&mut history, s, y, settings);
 
         // Exit condition
-        if !exit_condition::evaluate(&x, &g, f, f_old, d, &settings) {
+        if !exit_condition::evaluate(x, &g, f, f_old, d, settings) {
             break;
         }
     }

@@ -1,6 +1,10 @@
 /// Enumerator for minimization algorithm
 pub enum MinimizationAlg {
+    /// Simple gradient descent algorithm (slow)
+    GradientDescent,
+    /// BFGS algorithm
     Bfgs,
+    /// L-BFGS algorithm (memory efficient implementation of BFGS)
     Lbfgs,
     /// Use L-BFGS algorithm if BFGS fails
     BfgsBackup,

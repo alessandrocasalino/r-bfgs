@@ -2,12 +2,14 @@ use std::mem;
 use crate::settings::{LineSearchAlg, Settings};
 
 /// Simple line search according to Wolfe's condition
-pub(crate) fn line_search_simple<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
-                                         g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
-                                         -> bool
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn line_search_simple<Function, Gradient>(ef: &Function, gf: &Gradient, p: &[f64], x: &mut [f64],
+                                                     x_new: &mut [f64], g: &mut [f64], f: &mut f64, a: &mut f64,
+                                                     d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
+                                                     -> bool
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Import settings
     let mu = settings.mu;
@@ -41,7 +43,7 @@ pub(crate) fn line_search_simple<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &mut
             break;
         }
 
-        *a = *a * 0.5;
+        *a *= 0.5;
 
         // Try to increase the value of initial a or stop the process if the value of a is too low
         if *a < 1e-6 {
@@ -134,7 +136,7 @@ fn trial_value(l: &Point, t: &Point, u: &Point, bracketed: bool) -> (f64, u32) {
         if (l.a < u.a && ac <= t.a) || (l.a > u.a && ac >= t.a) {
             ac = u.a
         };
-        let res = if bracketed { if (ac - t.a).abs() < (ar - t.a).abs() { ac } else { ar } } else { if (ac - t.a).abs() > (ar - t.a).abs() { ac } else { ar } };
+        let res = if bracketed { if (ac - t.a).abs() < (ar - t.a).abs() { ac } else { ar } } else if (ac - t.a).abs() > (ar - t.a).abs() { ac } else { ar };
         return (res, 3);
     }
 
@@ -145,11 +147,14 @@ fn trial_value(l: &Point, t: &Point, u: &Point, bracketed: bool) -> (f64, u32) {
 }
 
 /// Update the value of the energy and the gradient in the Point structure
-pub(crate) fn update_function<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
-                                      g: &mut Vec<f64>, f: &mut f64, a: f64, d: i32, phi: &mut Point, eval: &mut usize)
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn update_function<Function, Gradient>(ef: &Function, gf: &Gradient, p: &[f64], x: &[f64],
+                                                  x_new: &mut [f64], g: &mut [f64], f: &mut f64, a: f64, d: i32,
+                                                  phi: &mut Point, eval: &mut usize)
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32) {
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
+{
     unsafe { cblas::dcopy(d, x, 1, x_new, 1) };
     unsafe { cblas::daxpy(d, a, p, 1, x_new, 1) };
 
@@ -157,16 +162,19 @@ pub(crate) fn update_function<Ef, Gf>(ef: &Ef, gf: &Gf, p: &Vec<f64>, x: &Vec<f6
     gf(x_new, g, f, d);
     *eval += 1;
 
-    *phi = Point { a: a, f: *f, d: unsafe { cblas::ddot(d, g, 1, p, 1) } };
+    *phi = Point { a, f: *f, d: unsafe { cblas::ddot(d, g, 1, p, 1) } };
 }
 
 /// Algorithm for efficient line search from J. J. More and D. J. Thuente, Line search algorithms with guaranteed sufficient decrease, ACM Transactions on Mathematical Software, 20 (1994)
-pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
-                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize, iter_max: usize)
-                                               -> bool
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn line_search_more_thuente<Function, Gradient>(ef: &Function, gf: &Gradient, phi_s: &Point, p: &[f64],
+                                                           x: &[f64], x_new: &mut [f64], g: &mut [f64],
+                                                           f: &mut f64, a: &mut f64, d: i32, k_out: usize,
+                                                           settings: &Settings, eval: &mut usize, iter_max: usize)
+                                                           -> bool
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Estimate the value of a from the gradient
     *a = if k_out > 0 { 1. } else { f64::min(1., 1. / unsafe { cblas::dnrm2(d, g, 1) }) };
@@ -183,12 +191,12 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
     let mut bracketed = false;
 
     // Extract starting point from input
-    let mut phi_0: Point = (*phi_s).clone();
+    let mut phi_0: Point = *phi_s;
     // Change the sign of the derivative to be consistent with paper notation
     phi_0.d *= -1.;
 
     // Temporary points
-    let mut phi_l: Point = phi_0.clone();
+    let mut phi_l: Point = phi_0;
     let mut phi_u = Point { a: 0., f: 0., d: 0. };
     let mut phi_j = Point { a: 0., f: 0., d: 0. };
 
@@ -284,19 +292,22 @@ pub(crate) fn line_search_more_thuente<Ef, Gf>(ef: &Ef, gf: &Gf, phi_s: &Point, 
 /* Routine for efficient line-search from
  * Jorge Nocedal Stephen J. Wright "Numerical Optimization" (2nd Edition)
  * Algorithm 3.5 (Line Search Algorithm) and Algorithm 3.6 (Zoom) */
-pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &Vec<f64>, x_new: &mut Vec<f64>,
-                                               g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, settings: &Settings, eval: &mut usize, iter_max: usize)
-                                               -> bool
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn line_search_backtracking<Function, Gradient>(ef: &Function, gf: &Gradient, phi_0: &Point, p: &[f64],
+                                                           x: &[f64], x_new: &mut [f64], g: &mut [f64],
+                                                           f: &mut f64, a: &mut f64, d: i32, settings: &Settings,
+                                                           eval: &mut usize, iter_max: usize)
+                                                           -> bool
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Import settings
     let mu = settings.mu;
     let eta = settings.eta;
 
     let init_step = *a;
-    let mut phi_l: Point = phi_0.clone();
+    let mut phi_l: Point = *phi_0;
     let mut phi_u: Point = Point { a: 0., f: 0., d: 0. };
 
     let mut k = 1;
@@ -351,19 +362,22 @@ pub(crate) fn line_search_backtracking<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, 
     }
 
     *a = init_step;
-    return false;
+
+    false
 }
 
-pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>, x: &mut Vec<f64>, x_new: &mut Vec<f64>,
-                                  g: &mut Vec<f64>, f: &mut f64, a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
-                                  -> bool
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn line_search<Function, Gradient>(ef: &Function, gf: &Gradient, phi_0: &Point, p: &[f64],
+                                              x: &mut [f64], x_new: &mut [f64], g: &mut [f64], f: &mut f64,
+                                              a: &mut f64, d: i32, k_out: usize, settings: &Settings, eval: &mut usize)
+                                              -> bool
     where
-        Ef: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gf: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     match settings.line_search {
         LineSearchAlg::Simple => {
-            line_search_simple(&ef, &gf, &p, x, x_new, g, f, a, d, k_out, &settings, eval)
+            line_search_simple(&ef, &gf, p, x, x_new, g, f, a, d, k_out, settings, eval)
         }
         /* Find a according to Wolfe's condition:
          * - more_thuente: check if this can be used to find a (if yes use that a value)
@@ -372,7 +386,7 @@ pub(crate) fn line_search<Ef, Gf>(ef: &Ef, gf: &Gf, phi_0: &Point, p: &Vec<f64>,
          */
         LineSearchAlg::Backtracking => {
             line_search_more_thuente(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, k_out, settings, eval, 10) ||
-                line_search_backtracking(&ef, &gf, phi_0, &p, x, x_new, g, f, a, d, &settings, eval, 30)
+                line_search_backtracking(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, settings, eval, 30)
         }
     }
 }

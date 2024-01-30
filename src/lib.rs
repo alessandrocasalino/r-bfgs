@@ -10,6 +10,7 @@ mod lbfgs;
 mod line_search;
 mod exit_condition;
 mod log;
+mod gradient_descent;
 
 use crate::settings::Settings;
 use crate::settings::MinimizationAlg;
@@ -41,18 +42,47 @@ use crate::settings::MinimizationAlg;
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Import r-bfgs library
+/// use bfgs;
+/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+///
+/// // Create the settings with default parameters
+/// let mut settings: bfgs::settings::Settings = Default::default();
+/// // And eventually change some of the settings
+/// settings.minimization = MinimizationAlg::Lbfgs;
+/// settings.line_search = LineSearchAlg::Backtracking;
+///
+/// // Function to be minimized
+/// let function = |x: &[f64], g: &[f64], f: &mut f64, d: i32| {
+///     *f = 0.;
+///     for v in x {
+///       *f += v * v;
+///     }
+/// };
+///
+/// // Set the starting point
+/// let mut x = vec![0., -1.];
+/// // Find the minimum
+/// let result = bfgs::get_minimum(&function, &mut x, &settings);
+/// // Check if the result is found
+/// assert_ne!(result, None, "Result not found");
+/// ```
 #[allow(non_snake_case)]
 pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings: &Settings)
-                       -> Option<f64>
+                             -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32)
 {
     // Default gradient
-    let gf = |x: &Vec<f64>, g: &mut Vec<f64>, _f: &f64, d: i32| {
+    let gf = |x: &[f64], g: &mut [f64], _f: &f64, d: i32| {
         // Finite difference derivative
         let h = 1e-5;
-        let mut x_for = x.clone();
-        let mut x_bck = x.clone();
+        let mut x_for: Vec<f64> = x.to_vec();
+        let mut x_bck: Vec<f64> = x.to_vec();
         for i in 0..d {
             let mut f1 = 0.;
             let mut f2 = 0.;
@@ -100,12 +130,48 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
 /// `None` if the algorithm does not converge.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Import r-bfgs library
+/// use bfgs;
+/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+///
+/// // Create the settings with default parameters
+/// let mut settings: bfgs::settings::Settings = Default::default();
+/// // And eventually change some of the settings
+/// settings.minimization = MinimizationAlg::Lbfgs;
+/// settings.line_search = LineSearchAlg::Backtracking;
+///
+/// // Function to be minimized
+/// let function = |x: &[f64], g: &[f64], f: &mut f64, _d: i32| {
+///     *f = 0.;
+///     for v in x {
+///       *f += v * v;
+///     }
+/// };
+///
+/// // Gradient
+/// let gradient = |x: &[f64], g: &mut [f64], f: &f64, d: i32| {
+///     for i in 0..d as usize {
+///       g[i] = 2. * x[i];
+///     }
+/// };
+///
+/// // Set the starting point
+/// let mut x = vec![0., -1.];
+/// // Find the minimum
+/// let result = bfgs::get_minimum_with_gradient(&function, &gradient, &mut x, &settings);
+/// // Check if the result is found
+/// assert_ne!(result, None, "Result not found");
+/// ```
 #[allow(non_snake_case)]
-pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                                                 -> Option<f64>
+pub fn get_minimum_with_gradient<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
+                                                     -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     do_bfgs(fn_function, fn_gradient, x, settings)
 }
@@ -113,8 +179,8 @@ pub fn get_minimum_with_grad<Function, Gradient>(fn_function: &Function, fn_grad
 fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
                                -> Option<f64>
     where
-        Function: Fn(&Vec<f64>, &Vec<f64>, &mut f64, i32),
-        Gradient: Fn(&Vec<f64>, &mut Vec<f64>, &f64, i32)
+        Function: Fn(&[f64], &[f64], &mut f64, i32),
+        Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Check value of settings
     if settings.mu > settings.eta {
@@ -124,6 +190,10 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
 
     // Handle different minimization methods
     match settings.minimization {
+        MinimizationAlg::GradientDescent => {
+            use crate::gradient_descent::gradient_descent;
+            gradient_descent(fn_function, fn_gradient, x, settings)
+        }
         MinimizationAlg::Bfgs => {
             use crate::bfgs::bfgs;
             bfgs(fn_function, fn_gradient, x, settings)
@@ -139,10 +209,7 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
                 Some(f) => Some(f),
                 None => {
                     use crate::lbfgs::lbfgs;
-                    match lbfgs(fn_function, fn_gradient, x, settings) {
-                        Some(f) => Some(f),
-                        None => None
-                    }
+                    lbfgs(fn_function, fn_gradient, x, settings)
                 }
             }
         }
