@@ -44,7 +44,7 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
 
         // Update energy and gradient
         fn_function(x, &g, &mut f, d);
-        fn_gradient(x, &mut g, &f, d);
+        fn_gradient(x, &mut *g, &f, d);
         eval += 1;
 
         let g_norm = unsafe { cblas::dnrm2(d, &g, 1) };
