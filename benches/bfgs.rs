@@ -15,7 +15,7 @@ fn bench_bfgs(c: &mut Criterion) {
 
     for d in dims {
         group.bench_with_input(BenchmarkId::from_parameter(d), &d, |b, &d| {
-            b.iter(|| bfgs::get_minimum(&sphere, black_box(&mut vec![1.7; d]), &settings));
+            b.iter(|| bfgs::get_minimum(&sphere, black_box(&vec![1.7; d]), &settings));
         });
     }
 
