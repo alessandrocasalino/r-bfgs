@@ -41,7 +41,7 @@ use crate::settings::MinimizationAlg;
 ///
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
-/// `None` if the algorithm does not converge.
+/// `Err` if the algorithm does not converge.
 ///
 /// # Examples
 ///
@@ -129,7 +129,7 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 ///
 /// The minimum energy value if the algorithm converges within the
 /// maximum number of iterations specified in the `settings`. Returns
-/// `None` if the algorithm does not converge.
+/// `Err` if the algorithm does not converge.
 ///
 /// # Examples
 ///
