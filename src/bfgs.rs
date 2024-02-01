@@ -26,7 +26,7 @@ fn Hessian(H: &mut [f64], s: &[f64], y: &[f64], I: &[f64], B: &mut Vec<f64>, C: 
 
 #[allow(non_snake_case)]
 pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                                -> Option<f64>
+    -> Result<f64, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
@@ -91,7 +91,7 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
     loop {
         // Stop if reaching the maximum number of iterations requested
         if k >= iter_max {
-            return None;
+            return Err("Maximum number of iterations reached")
         }
         k += 1;
 
@@ -108,8 +108,7 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
 
         // Perform line search (updating a)
         if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, settings, &mut eval) {
-            eprintln!("ERROR: Line search not converging");
-            return None;
+            return Err("Line search not converging");
         }
 
         // Update x with the new values of a
@@ -141,5 +140,5 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
         }
     }
 
-    Some(f)
+    Ok(f)
 }

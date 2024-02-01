@@ -19,7 +19,7 @@ fn test_sphere_function() {
     for d in dims {
         let mut x = vec![(); d].into_iter().map(|_| thread_rng().gen_range(-10.0..10.0)).collect();
         let result = bfgs::get_minimum(&test_functions::sphere, &mut x, &settings);
-        assert_ne!(result, None, "Result not found");
+        assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
         test_utils::check_result(x, cmp);
     }

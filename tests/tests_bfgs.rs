@@ -18,7 +18,7 @@ fn test_sphere_function() {
     for d in dims {
         let mut x = vec![(); d].into_iter().map(|_| thread_rng().gen_range(-10.0..10.0)).collect();
         let result = bfgs::get_minimum(&test_functions::sphere, &mut x, &settings);
-        assert_ne!(result, None, "Result not found");
+        assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
         test_utils::check_result(x, cmp);
     }
@@ -39,7 +39,7 @@ fn test_sphere_function_with_gradient() {
         let mut x = vec![(); d].into_iter().map(|_| thread_rng().gen_range(-10.0..10.0)).collect();
         let result = bfgs::get_minimum_with_gradient(&test_functions::sphere,
                                                      &test_functions::sphere_gradient, &mut x, &settings);
-        assert_ne!(result, None, "Result not found");
+        assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
         test_utils::check_result(x, cmp);
     }
@@ -54,13 +54,13 @@ fn test_rosenbrock_function() {
 
     let mut x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::rosenbrock, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 1.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.001);
 
     let mut x = vec![-0.2, 1., -1., -3.2, 1., -0.9];
     let result = bfgs::get_minimum(&test_functions::rosenbrock, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 1., 1., 1., 1., 1.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.001);
 }
@@ -74,7 +74,7 @@ fn test_himmelblau_function() {
 
     let mut x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::himmelblau, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-2.805118, 3.131312];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.001);
 }
@@ -89,14 +89,14 @@ fn test_three_hump_camel_function() {
     // Local minimum
     let mut x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::three_hump_camel, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-1.74755, 0.873776];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Global minimum
     let mut x = vec![-0.2, 0.5];
     let result = bfgs::get_minimum(&test_functions::three_hump_camel, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., 0.];
     test_utils::check_result(x, cmp);
 }
@@ -111,7 +111,7 @@ fn test_mccormick_function() {
     // Global minimum
     let mut x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::mccormick, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-0.54719, -1.54719];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 }
@@ -126,14 +126,14 @@ fn test_styblinski_tang_function() {
     // Global minimum
     let mut x = vec![-1.2, -1.0];
     let result = bfgs::get_minimum(&test_functions::styblinki_tang, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-2.903534, -2.903534];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Local minimum
     let mut x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::styblinki_tang, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-2.903534, 2.7468];
     // Local minimum
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
@@ -141,14 +141,14 @@ fn test_styblinski_tang_function() {
     // Global minimum
     let mut x = vec![-1.2, -1.0, -1.0, -1.0, -1.0];
     let result = bfgs::get_minimum(&test_functions::styblinki_tang, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![-2.903534, -2.903534, -2.903534, -2.903534, -2.903534];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Local minimum
     let mut x = vec![1.2, 1.0, 1.0, 1.0, 1.0];
     let result = bfgs::get_minimum(&test_functions::styblinki_tang, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![2.7468, 2.7468, 2.7468, 2.7468, 2.7468];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 }
@@ -163,14 +163,14 @@ fn test_beale_function() {
     // Global minimum
     let mut x = vec![1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::beale, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![3., 0.5];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Global minimum
     let mut x = vec![-1.2, -1.0];
     let result = bfgs::get_minimum(&test_functions::beale, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![3., 0.5];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
@@ -202,14 +202,14 @@ fn test_goldstein_price_function() {
     // Global minimum
     let mut x = vec![0., -1.];
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., -1.];
     test_utils::check_result(x, cmp);
 
     // Global minimum
     let mut x = vec![0., 1.0];
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., -1.];
     test_utils::check_result(x, cmp);
 }
@@ -224,28 +224,28 @@ fn test_booth_function() {
     // Global minimum
     let mut x = vec![0., -1.];
     let result = bfgs::get_minimum(&test_functions::booth, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 3.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Global minimum
     let mut x = vec![5., -5.];
     let result = bfgs::get_minimum(&test_functions::booth, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 3.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Global minimum
     let mut x = vec![-5., -5.];
     let result = bfgs::get_minimum(&test_functions::booth, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 3.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 
     // Global minimum
     let mut x = vec![5., 5.];
     let result = bfgs::get_minimum(&test_functions::booth, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![1., 3.];
     float_eq::assert_float_eq!(x, cmp, rmax_all <= 0.01);
 }
@@ -260,7 +260,7 @@ fn test_matyas_function() {
     // Global minimum
     let mut x = vec![0., -1.];
     let result = bfgs::get_minimum(&test_functions::matyas, &mut x, &settings);
-    assert_ne!(result, None, "Result not found");
+    assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., 0.];
     test_utils::check_result(x, cmp);
 }

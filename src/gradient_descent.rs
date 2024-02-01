@@ -2,7 +2,7 @@ use crate::Settings;
 
 pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
                                                    x: &mut Vec<f64>, settings: &Settings)
-                                                   -> Option<f64>
+    -> Result<f64, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
@@ -54,15 +54,11 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
                 println!(" - Iterations: {} ", iter);
                 println!(" - Function evaluations: {}", eval);
             }
-            return Some(f);
+            return Ok(f);
         }
     }
 
-    if verbose {
-        println!("Maximum number of iterations reached");
-    }
-
-    None
+    Err("Maximum number of iterations reached")
 }
 
 

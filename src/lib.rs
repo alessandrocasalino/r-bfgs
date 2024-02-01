@@ -69,11 +69,11 @@ use crate::settings::MinimizationAlg;
 /// // Find the minimum
 /// let result = bfgs::get_minimum(&function, &mut x, &settings);
 /// // Check if the result is found
-/// assert_ne!(result, None, "Result not found");
+/// assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
 /// ```
 #[allow(non_snake_case)]
 pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings: &Settings)
-                             -> Option<f64>
+    -> Result<f64, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32)
 {
@@ -164,11 +164,11 @@ pub fn get_minimum<Function>(fn_function: &Function, x: &mut Vec<f64>, settings:
 /// // Find the minimum
 /// let result = bfgs::get_minimum_with_gradient(&function, &gradient, &mut x, &settings);
 /// // Check if the result is found
-/// assert_ne!(result, None, "Result not found");
+/// assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
 /// ```
 #[allow(non_snake_case)]
 pub fn get_minimum_with_gradient<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                                                     -> Option<f64>
+                                                     -> Result<f64, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
@@ -177,15 +177,14 @@ pub fn get_minimum_with_gradient<Function, Gradient>(fn_function: &Function, fn_
 }
 
 fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                               -> Option<f64>
+    -> Result<f64, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     // Check value of settings
     if settings.mu > settings.eta {
-        eprintln!("ERROR: mu can not be bigger than eta");
-        return None;
+        return Err("mu can not be bigger than eta")
     }
 
     // Handle different minimization methods
@@ -206,8 +205,8 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
             use crate::bfgs::bfgs;
             let r = bfgs(fn_function, fn_gradient, x, settings);
             match r {
-                Some(f) => Some(f),
-                None => {
+                Ok(f) => Ok(f),
+                Err(_e) => {
                     use crate::lbfgs::lbfgs;
                     lbfgs(fn_function, fn_gradient, x, settings)
                 }
