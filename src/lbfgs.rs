@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use crate::{exit_condition, line_search};
+use crate::{exit_condition, line_search, MinimizationResult};
 use crate::lbfgs::lbfgs_deque::{HistoryPoint, fifo_operation};
 use crate::settings::Settings;
 
@@ -87,8 +87,8 @@ fn Hessian(H: &mut [f64], s: &[f64], y: &[f64], d: i32) {
 /// diagonal Hessian with the same elements, i.e., an identity matrix multiplied by a
 /// constant, as in equation (7.20)
 #[allow(non_snake_case)]
-pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x: &mut Vec<f64>, settings: &Settings)
-                                 -> Option<f64>
+pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x0: &[f64], settings: &Settings)
+    -> Result<MinimizationResult, &'static str>
     where
         Function: Fn(&[f64], &[f64], &mut f64, i32),
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
@@ -97,6 +97,9 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
     let iter_max = settings.iter_max;
     // Verbose (log)
     let verbose = settings.verbose;
+
+    // Position vector
+    let mut x = x0.to_owned();
 
     // Get the dimension
     let d = x.len() as i32;
@@ -111,8 +114,8 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
     let mut g: Vec<f64> = vec![0.; d as usize];
 
     // Update energy and gradient
-    fn_function(x, &g, &mut f, d);
-    fn_gradient(x, &mut g, &f, d);
+    fn_function(&x, &g, &mut f, d);
+    fn_gradient(&x, &mut g, &f, d);
     eval += 1;
 
     // Hessian estimation
@@ -142,7 +145,7 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
     loop {
         // Stop if reaching the maximum number of iterations requested
         if k >= iter_max {
-            return None;
+            return Err("Maximum number of iterations reached");
         }
         k += 1;
 
@@ -152,7 +155,7 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         let mut y: Vec<f64> = vec![0.; d as usize];
 
         // Store current values
-        unsafe { cblas::dcopy(d, &*x, 1, &mut s, 1); }
+        unsafe { cblas::dcopy(d, &x, 1, &mut s, 1); }
         unsafe { cblas::dcopy(d, &g, 1, &mut y, 1); }
         f_old = f;
 
@@ -163,16 +166,15 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         let phi_0: line_search::Point = line_search::Point { a: 0., f, d: unsafe { cblas::ddot(d, &g, 1, &p, 1) } };
 
         // Perform line search (updating a)
-        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, x, &mut x_new, &mut g, &mut f, &mut a, d, k, settings, &mut eval) {
-            eprintln!("ERROR: Line search not converging");
-            return None;
+        if !line_search::line_search(&fn_function, &fn_gradient, &phi_0, &p, &mut x, &mut x_new, &mut g, &mut f, &mut a, d, k, settings, &mut eval) {
+            return Err("Line search not converging");
         }
 
         // Update x with the new values of a
-        unsafe { cblas::dcopy(d, &x_new, 1, &mut *x, 1); }
+        unsafe { cblas::dcopy(d, &x_new, 1, &mut x, 1); }
 
         // Compute -s and -y
-        unsafe { cblas::daxpy(d, -1., &*x, 1, &mut s, 1); }
+        unsafe { cblas::daxpy(d, -1., &x, 1, &mut s, 1); }
         unsafe { cblas::daxpy(d, -1., &g, 1, &mut y, 1); }
 
         // Compute the Hessian
@@ -181,17 +183,17 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         }
 
         if verbose {
-            crate::log::print_log(x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
+            crate::log::print_log(&x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
         };
 
         // Store in deque
         fifo_operation(&mut history, s, y, settings);
 
         // Exit condition
-        if !exit_condition::evaluate(x, &g, f, f_old, d, settings) {
+        if !exit_condition::evaluate(&x, &g, f, f_old, d, settings) {
             break;
         }
     }
 
-    Some(f)
+    Ok(MinimizationResult { f, x: x.to_vec(), iter: k, eval })
 }

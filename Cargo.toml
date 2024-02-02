@@ -2,6 +2,10 @@
 name = "bfgs"
 version = "0.1.0"
 edition = "2021"
+authors = ["Alessandro Casalino <a.casalino@cineca.it>"]
+repository = "https://github.com/alessandrocasalino/r-bfgs"
+license = "MIT"
+description = "A BFGS implementation in Rust using BLAS routines."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
