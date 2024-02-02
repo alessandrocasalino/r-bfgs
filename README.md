@@ -37,4 +37,4 @@ println!("Position of the minimum: {:?}", result.as_ref().unwrap().x);
 println!("Number of iterations: {}", result.as_ref().unwrap().iter);
 ```
 
-See the tests for more examples.
+See the tests for more examples, e.g., for the `get_minimum` with provided gradient.
