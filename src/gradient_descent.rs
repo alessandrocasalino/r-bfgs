@@ -1,4 +1,4 @@
-use crate::{MinimizationResult, Settings};
+use crate::{MinimizationResult, plot, Settings};
 
 pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
                                                    x0: &[f64], settings: &Settings)
@@ -36,6 +36,9 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
     // Learning rate
     let alpha = 0.1;
 
+    // History
+    let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
+
     // Iteration
     while iter < iter_max {
         // Update the iteration counter
@@ -49,9 +52,14 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
         fn_gradient(&x, &mut g, &f, d);
         eval += 1;
 
+        // Save the history
+        if settings.save_history {
+            minimization_history.push(plot::history::MinimizationHistoryPoint {k: iter, f, x: x.to_vec(), eval });
+        }
+
         let g_norm = unsafe { cblas::dnrm2(d, &g, 1) };
         if g_norm < settings.gtol {
-            return Ok(MinimizationResult { f, x: x.to_vec(), iter, eval });
+            return Ok(MinimizationResult { f, x: x.to_vec(), iter, eval, history: minimization_history });
         }
     }
 

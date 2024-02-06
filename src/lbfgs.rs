@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use crate::{exit_condition, line_search, MinimizationResult};
+use crate::{exit_condition, line_search, MinimizationResult, plot};
 use crate::lbfgs::lbfgs_deque::{HistoryPoint, fifo_operation};
 use crate::settings::Settings;
 
@@ -138,8 +138,11 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
     // Temporary vector for L-BFGS two-loop recursion
     let mut alpha = vec![0.; settings.history_depth];
 
-    //Iteration number
+    // Iteration number
     let mut k: usize = 0;
+
+    // History
+    let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
 
     // Main loop
     loop {
@@ -186,6 +189,11 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
             crate::log::print_log(&x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
         };
 
+        // Save the history
+        if settings.save_history {
+            minimization_history.push(plot::history::MinimizationHistoryPoint { k, f, x: x.to_vec(), eval });
+        }
+
         // Store in deque
         fifo_operation(&mut history, s, y, settings);
 
@@ -195,5 +203,5 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         }
     }
 
-    Ok(MinimizationResult { f, x: x.to_vec(), iter: k, eval })
+    Ok(MinimizationResult { f, x: x.to_vec(), iter: k, eval, history: minimization_history })
 }

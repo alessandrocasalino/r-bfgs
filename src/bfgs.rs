@@ -1,4 +1,4 @@
-use crate::{exit_condition, line_search, MinimizationResult};
+use crate::{exit_condition, line_search, plot, MinimizationResult};
 use crate::settings::Settings;
 
 #[allow(non_snake_case, clippy::too_many_arguments)]
@@ -87,8 +87,11 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
     let mut B: Vec<f64> = vec![0.; (d * d) as usize];
     let mut C: Vec<f64> = vec![0.; (d * d) as usize];
 
-    //Iteration number
+    // Iteration number
     let mut k: usize = 0;
+
+    // History
+    let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
 
     // Main loop
     loop {
@@ -137,11 +140,16 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
             crate::log::print_log(&x, &g, &p, &y, &s, f, f_old, k, a, d, eval);
         };
 
+        // Save the history
+        if settings.save_history {
+            minimization_history.push(plot::history::MinimizationHistoryPoint { k, f, x: x.to_vec(), eval });
+        }
+
         // Exit condition
         if !exit_condition::evaluate(&x, &g, f, f_old, d, settings) {
             break;
         }
     }
 
-    Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval})
+    Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval, history: minimization_history })
 }

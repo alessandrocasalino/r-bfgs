@@ -76,6 +76,7 @@ mod lbfgs;
 mod gradient_descent;
 mod line_search;
 mod exit_condition;
+mod plot;
 mod log;
 
 use crate::settings::Settings;
@@ -91,6 +92,8 @@ pub struct MinimizationResult {
     pub iter: usize,
     /// The number of function evaluations
     pub eval: usize,
+    /// History of the energy
+    pub history: Vec<plot::history::MinimizationHistoryPoint>
 }
 
 /// Calculates the minimum of a function using the BFGS algorithm.

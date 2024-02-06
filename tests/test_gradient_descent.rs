@@ -21,6 +21,6 @@ fn test_sphere_function() {
         let result = bfgs::get_minimum(&test_functions::sphere, &x, &settings);
         assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
-        test_utils::check_result(result.unwrap().x, cmp);
+        test_utils::check_result(&result.unwrap().x, &cmp);
     }
 }

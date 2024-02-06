@@ -20,7 +20,7 @@ fn test_sphere_function() {
         let result = bfgs::get_minimum(&test_functions::sphere, &x, &settings);
         assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
-        test_utils::check_result(result.unwrap().x, cmp);
+        test_utils::check_result(&result.unwrap().x, &cmp);
     }
 }
 
@@ -41,7 +41,7 @@ fn test_sphere_function_with_gradient() {
                                                      &test_functions::sphere_gradient, &x, &settings);
         assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
         let cmp = vec![0.; d];
-        test_utils::check_result(result.unwrap().x, cmp);
+        test_utils::check_result(&result.unwrap().x, &cmp);
     }
 }
 
@@ -98,7 +98,7 @@ fn test_three_hump_camel_function() {
     let result = bfgs::get_minimum(&test_functions::three_hump_camel, &x, &settings);
     assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., 0.];
-    test_utils::check_result(result.unwrap().x, cmp);
+    test_utils::check_result(&result.unwrap().x, &cmp);
 }
 
 #[test]
@@ -204,14 +204,14 @@ fn test_goldstein_price_function() {
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &x, &settings);
     assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., -1.];
-    test_utils::check_result(result.unwrap().x, cmp);
+    test_utils::check_result(&result.unwrap().x, &cmp);
 
     // Global minimum
     let x = vec![0., 1.0];
     let result = bfgs::get_minimum(&test_functions::goldstein_price, &x, &settings);
     assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., -1.];
-    test_utils::check_result(result.unwrap().x, cmp);
+    test_utils::check_result(&result.unwrap().x, &cmp);
 }
 
 #[test]
@@ -262,5 +262,5 @@ fn test_matyas_function() {
     let result = bfgs::get_minimum(&test_functions::matyas, &x, &settings);
     assert!(result.is_ok(), "Result not found: {}", result.err().unwrap());
     let cmp = vec![0., 0.];
-    test_utils::check_result(result.unwrap().x, cmp);
+    test_utils::check_result(&result.unwrap().x, &cmp);
 }
