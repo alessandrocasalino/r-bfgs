@@ -4,14 +4,15 @@ use bfgs::settings::MinimizationAlg;
 mod bench_functions;
 
 use bench_functions::sphere;
+use crate::bench_functions::booth;
 
-fn bench_bfgs(c: &mut Criterion) {
+fn bench_bfgs_sphere(c: &mut Criterion) {
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();
     settings.minimization = MinimizationAlg::Bfgs;
 
-    let mut group = c.benchmark_group("bfgs");
+    let mut group = c.benchmark_group("bfgs_sphere");
 
     for d in dims {
         group.bench_with_input(BenchmarkId::from_parameter(d), &d, |b, &d| {
@@ -22,5 +23,26 @@ fn bench_bfgs(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_bfgs);
+fn bench_bfgs_booth(c: &mut Criterion) {
+    let dims = vec![2];
+
+    let mut settings: bfgs::settings::Settings = Default::default();
+    settings.minimization = MinimizationAlg::Bfgs;
+
+    let mut group = c.benchmark_group("bfgs_booth");
+
+    for d in dims {
+        group.bench_with_input(BenchmarkId::from_parameter(d), &d, |b, &d| {
+            b.iter(|| {
+                let result = bfgs::get_minimum(&booth, black_box(&vec![1.7; d]), &settings);
+                let cmp = vec![1., 3.];
+                float_eq::assert_float_eq!(result.unwrap().x, cmp, rmax_all <= 0.01);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_bfgs_sphere, bench_bfgs_booth);
 criterion_main!(benches);
