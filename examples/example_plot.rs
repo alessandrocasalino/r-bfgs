@@ -12,6 +12,8 @@ fn booth(r: &[f64], _g: &[f64], f: &mut f64, _d: i32) {
 fn main() {
     let mut settings: bfgs::settings::Settings = Default::default();
     settings.minimization = MinimizationAlgorithm::Bfgs;
+    // Save the history of the minimization
+    // This will allow to plot the points of the minimization history
     settings.save_history = true;
 
     let x = vec![2., 3.];
