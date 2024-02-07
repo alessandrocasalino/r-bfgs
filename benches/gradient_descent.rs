@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use bfgs::settings::MinimizationAlg;
+use bfgs::settings::MinimizationAlgorithm;
 
 mod bench_functions;
 
@@ -9,7 +9,7 @@ fn bench_gradient_descent_sphere(c: &mut Criterion) {
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::GradientDescent;
+    settings.minimization = MinimizationAlgorithm::GradientDescent;
 
     let mut group = c.benchmark_group("gradient_descent");
 
@@ -26,7 +26,7 @@ fn bench_gradient_descent_booth(c: &mut Criterion) {
     let dims = vec![2];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::GradientDescent;
+    settings.minimization = MinimizationAlgorithm::GradientDescent;
 
     let mut group = c.benchmark_group("gradient_descent");
 

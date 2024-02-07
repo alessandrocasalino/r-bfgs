@@ -78,7 +78,7 @@ pub fn goldstein_price(r: &[f64], _g: &[f64], f: &mut f64, _d: i32) {
 }
 
 #[allow(unused)]
-// Global minimum: [0., -1.]
+// Global minimum: [1., 3.]
 pub fn booth(r: &[f64], _g: &[f64], f: &mut f64, _d: i32) {
     let x = r[0];
     let y = r[1];

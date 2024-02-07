@@ -1,5 +1,5 @@
 /// Enumerator for minimization algorithm
-pub enum MinimizationAlg {
+pub enum MinimizationAlgorithm {
     /// Simple gradient descent algorithm (slow)
     GradientDescent,
     /// BFGS algorithm
@@ -11,7 +11,7 @@ pub enum MinimizationAlg {
 }
 
 /// Enumerator for line search algorithm
-pub enum LineSearchAlg {
+pub enum LineSearchAlgorithm {
     /// A line search according to Wolfe's conditions: Armijo and curvature conditions (slower)
     Simple,
     /// A line search using More-Thuente and backtracking algorithm (faster, but might fail in some cases)
@@ -26,15 +26,15 @@ pub enum LineSearchAlg {
 /// // Create settings with default parameters
 /// let mut settings: bfgs::settings::Settings = Default::default();
 /// // Choose the minimization algorithm
-/// settings.minimization = bfgs::settings::MinimizationAlg::Bfgs;
+/// settings.minimization = bfgs::settings::MinimizationAlgorithm::Bfgs;
 /// settings.verbose = false;
 /// ```
 ///
 pub struct Settings {
     /// Minimization algorithm (Bfgs, Lbfgs, BfgsBackup)
-    pub minimization: MinimizationAlg,
+    pub minimization: MinimizationAlgorithm,
     /// Line search algorithm
-    pub line_search: LineSearchAlg,
+    pub line_search: LineSearchAlgorithm,
 
     /// Exit condition
     pub ftol: f64,
@@ -78,8 +78,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Settings {
         Settings {
-            minimization: MinimizationAlg::Bfgs,
-            line_search: LineSearchAlg::Simple,
+            minimization: MinimizationAlgorithm::Bfgs,
+            line_search: LineSearchAlgorithm::Simple,
             ftol: 1e-6,
             gtol: 1e-14,
             gmax: 1e-14,

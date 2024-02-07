@@ -4,12 +4,12 @@ mod test_utils;
 #[test]
 fn test_history_bfgs () {
     use bfgs;
-    use bfgs::settings::MinimizationAlg;
-    use bfgs::settings::LineSearchAlg;
+    use bfgs::settings::MinimizationAlgorithm;
+    use bfgs::settings::LineSearchAlgorithm;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Simple;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Simple;
     settings.save_history = true;
 
     // Global minimum
@@ -31,12 +31,12 @@ fn test_history_bfgs () {
 #[test]
 fn test_history_lbfgs () {
     use bfgs;
-    use bfgs::settings::MinimizationAlg;
-    use bfgs::settings::LineSearchAlg;
+    use bfgs::settings::MinimizationAlgorithm;
+    use bfgs::settings::LineSearchAlgorithm;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Lbfgs;
-    settings.line_search = LineSearchAlg::Simple;
+    settings.minimization = MinimizationAlgorithm::Lbfgs;
+    settings.line_search = LineSearchAlgorithm::Simple;
     settings.save_history = true;
 
     // Global minimum
@@ -58,12 +58,12 @@ fn test_history_lbfgs () {
 #[test]
 fn test_history_bfgs_backtracking () {
     use bfgs;
-    use bfgs::settings::MinimizationAlg;
-    use bfgs::settings::LineSearchAlg;
+    use bfgs::settings::MinimizationAlgorithm;
+    use bfgs::settings::LineSearchAlgorithm;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
     settings.save_history = true;
 
     // Global minimum
@@ -85,12 +85,12 @@ fn test_history_bfgs_backtracking () {
 #[test]
 fn test_history_lbfgs_backtracking () {
     use bfgs;
-    use bfgs::settings::MinimizationAlg;
-    use bfgs::settings::LineSearchAlg;
+    use bfgs::settings::MinimizationAlgorithm;
+    use bfgs::settings::LineSearchAlgorithm;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Lbfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Lbfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
     settings.save_history = true;
 
     // Global minimum

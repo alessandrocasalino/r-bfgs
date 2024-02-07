@@ -1,5 +1,5 @@
 use std::mem;
-use crate::settings::{LineSearchAlg, Settings};
+use crate::settings::{LineSearchAlgorithm, Settings};
 
 /// Simple line search according to Wolfe's condition
 #[allow(clippy::too_many_arguments)]
@@ -376,7 +376,7 @@ pub(crate) fn line_search<Function, Gradient>(ef: &Function, gf: &Gradient, phi_
         Gradient: Fn(&[f64], &mut [f64], &f64, i32)
 {
     match settings.line_search {
-        LineSearchAlg::Simple => {
+        LineSearchAlgorithm::Simple => {
             line_search_simple(&ef, &gf, p, x, x_new, g, f, a, d, k_out, settings, eval)
         }
         /* Find a according to Wolfe's condition:
@@ -384,7 +384,7 @@ pub(crate) fn line_search<Function, Gradient>(ef: &Function, gf: &Gradient, phi_
          * - backtracking: otherwise evaluate the second with starting a from the first
          * This ensures that most of the steps have a = a_max = 1
          */
-        LineSearchAlg::Backtracking => {
+        LineSearchAlgorithm::Backtracking => {
             line_search_more_thuente(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, k_out, settings, eval, 10) ||
                 line_search_backtracking(&ef, &gf, phi_0, p, x, x_new, g, f, a, d, settings, eval, 30)
         }

@@ -15,6 +15,7 @@ cblas = "*"
 num = "*"
 log = "*"
 float_eq = "*"
+plotters = "*"
 
 [dev-dependencies]
 rand = "*"

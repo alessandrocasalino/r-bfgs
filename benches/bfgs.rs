@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use bfgs::settings::MinimizationAlg;
+use bfgs::settings::MinimizationAlgorithm;
 
 mod bench_functions;
 
@@ -10,7 +10,7 @@ fn bench_bfgs_sphere(c: &mut Criterion) {
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
 
     let mut group = c.benchmark_group("bfgs_sphere");
 
@@ -27,7 +27,7 @@ fn bench_bfgs_booth(c: &mut Criterion) {
     let dims = vec![2];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
 
     let mut group = c.benchmark_group("bfgs_booth");
 

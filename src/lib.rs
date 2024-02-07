@@ -29,13 +29,13 @@
 //! ```no_run
 //! // Import r-bfgs library
 //! use bfgs;
-//! use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+//! use bfgs::settings::{LineSearchAlgorithm, MinimizationAlgorithm};
 //!
 //! // Create the settings with default parameters
 //! let mut settings: bfgs::settings::Settings = Default::default();
 //! // And eventually change some of the settings
-//! settings.minimization = MinimizationAlg::Lbfgs;
-//! settings.line_search = LineSearchAlg::Backtracking;
+//! settings.minimization = MinimizationAlgorithm::Lbfgs;
+//! settings.line_search = LineSearchAlgorithm::Backtracking;
 //!
 //! // Function to be minimized
 //! let function = |x: &[f64], g: &[f64], f: &mut f64, d: i32| {
@@ -69,6 +69,7 @@ extern crate blas_src;
 
 // Public modules
 pub mod settings;
+pub mod plot;
 
 // Private modules
 mod bfgs;
@@ -76,11 +77,10 @@ mod lbfgs;
 mod gradient_descent;
 mod line_search;
 mod exit_condition;
-mod plot;
 mod log;
 
 use crate::settings::Settings;
-use crate::settings::MinimizationAlg;
+use crate::settings::MinimizationAlgorithm;
 
 /// Struct with results of minimization algorithms
 pub struct MinimizationResult {
@@ -93,7 +93,10 @@ pub struct MinimizationResult {
     /// The number of function evaluations
     pub eval: usize,
     /// History of the energy
-    pub history: Vec<plot::history::MinimizationHistoryPoint>
+    pub history: Vec<plot::history::MinimizationHistoryPoint>,
+
+    // Internal
+    minimization_algorithm: MinimizationAlgorithm
 }
 
 /// Calculates the minimum of a function using the BFGS algorithm.
@@ -138,13 +141,13 @@ pub struct MinimizationResult {
 /// ```no_run
 /// // Import r-bfgs library
 /// use bfgs;
-/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+/// use bfgs::settings::{LineSearchAlgorithm, MinimizationAlgorithm};
 ///
 /// // Create the settings with default parameters
 /// let mut settings: bfgs::settings::Settings = Default::default();
 /// // And eventually change some of the settings
-/// settings.minimization = MinimizationAlg::Lbfgs;
-/// settings.line_search = LineSearchAlg::Backtracking;
+/// settings.minimization = MinimizationAlgorithm::Lbfgs;
+/// settings.line_search = LineSearchAlgorithm::Backtracking;
 ///
 /// // Function to be minimized
 /// let function = |x: &[f64], g: &[f64], f: &mut f64, d: i32| {
@@ -239,13 +242,13 @@ pub fn get_minimum<Function>(fn_function: &Function, x0: &[f64], settings: &Sett
 /// ```no_run
 /// // Import r-bfgs library
 /// use bfgs;
-/// use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+/// use bfgs::settings::{LineSearchAlgorithm, MinimizationAlgorithm};
 ///
 /// // Create the settings with default parameters
 /// let mut settings: bfgs::settings::Settings = Default::default();
 /// // And eventually change some of the settings
-/// settings.minimization = MinimizationAlg::Lbfgs;
-/// settings.line_search = LineSearchAlg::Backtracking;
+/// settings.minimization = MinimizationAlgorithm::Lbfgs;
+/// settings.line_search = LineSearchAlgorithm::Backtracking;
 ///
 /// // Function to be minimized
 /// let function = |x: &[f64], g: &[f64], f: &mut f64, _d: i32| {
@@ -296,19 +299,19 @@ fn do_bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, x
 
     // Handle different minimization methods
     match settings.minimization {
-        MinimizationAlg::GradientDescent => {
+        MinimizationAlgorithm::GradientDescent => {
             use crate::gradient_descent::gradient_descent;
             gradient_descent(fn_function, fn_gradient, x0, settings)
         }
-        MinimizationAlg::Bfgs => {
+        MinimizationAlgorithm::Bfgs => {
             use crate::bfgs::bfgs;
             bfgs(fn_function, fn_gradient, x0, settings)
         }
-        MinimizationAlg::Lbfgs => {
+        MinimizationAlgorithm::Lbfgs => {
             use crate::lbfgs::lbfgs;
             lbfgs(fn_function, fn_gradient, x0, settings)
         }
-        MinimizationAlg::BfgsBackup => {
+        MinimizationAlgorithm::BfgsBackup => {
             use crate::bfgs::bfgs;
             let r = bfgs(fn_function, fn_gradient, x0, settings);
             match r {

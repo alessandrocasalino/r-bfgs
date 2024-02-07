@@ -1,5 +1,5 @@
 use rand::{Rng, thread_rng};
-use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+use bfgs::settings::{LineSearchAlgorithm, MinimizationAlgorithm};
 
 mod test_functions;
 mod test_utils;
@@ -11,9 +11,9 @@ fn test_sphere_function() {
     // Create settings with default parameters
     let mut settings: bfgs::settings::Settings = Default::default();
     // Select the minimization algorithm
-    settings.minimization = MinimizationAlg::Bfgs;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
     // Select the line search algorithm
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     let dims = vec![2, 6, 20, 100, 1000];
 
@@ -32,8 +32,8 @@ fn test_rosenbrock_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     let x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::rosenbrock, &x, &settings);
@@ -53,8 +53,8 @@ fn test_himmelblau_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     let x = vec![-1.2, 1.0];
     let result = bfgs::get_minimum(&test_functions::himmelblau, &x, &settings);
@@ -68,8 +68,8 @@ fn test_three_hump_camel_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Local minimum
     let x = vec![-1.2, 1.0];
@@ -91,8 +91,8 @@ fn test_mccormick_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![-1.2, 1.0];
@@ -107,8 +107,8 @@ fn test_styblinski_tang_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![-1.2, -1.0];
@@ -145,8 +145,8 @@ fn test_beale_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![1.2, 1.0];
@@ -186,8 +186,8 @@ fn test_goldstein_price_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![0., -1.];
@@ -209,8 +209,8 @@ fn test_booth_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![0., -1.];
@@ -247,8 +247,8 @@ fn test_matyas_function() {
     use bfgs;
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Bfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Bfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     // Global minimum
     let x = vec![0., -1.];

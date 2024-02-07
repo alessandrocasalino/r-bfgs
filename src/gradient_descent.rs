@@ -1,4 +1,5 @@
 use crate::{MinimizationResult, plot, Settings};
+use crate::settings::MinimizationAlgorithm;
 
 pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
                                                    x0: &[f64], settings: &Settings)
@@ -31,18 +32,22 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
     eval += 1;
 
     // Iteration counter
-    let mut iter: usize = 0;
+    let mut k: usize = 0;
 
     // Learning rate
     let alpha = 0.1;
 
     // History
     let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
+    // Save the history
+    if settings.save_history {
+        minimization_history.push(plot::history::MinimizationHistoryPoint { k, f, x: x.to_vec(), eval });
+    }
 
     // Iteration
-    while iter < iter_max {
+    while k < iter_max {
         // Update the iteration counter
-        iter += 1;
+        k += 1;
 
         // Update the position
         unsafe { cblas::daxpy(d, -alpha, &g, 1, &mut x, 1); }
@@ -54,12 +59,12 @@ pub(crate) fn gradient_descent<Function, Gradient>(fn_function: &Function, fn_gr
 
         // Save the history
         if settings.save_history {
-            minimization_history.push(plot::history::MinimizationHistoryPoint {k: iter, f, x: x.to_vec(), eval });
+            minimization_history.push(plot::history::MinimizationHistoryPoint {k, f, x: x.to_vec(), eval });
         }
 
         let g_norm = unsafe { cblas::dnrm2(d, &g, 1) };
         if g_norm < settings.gtol {
-            return Ok(MinimizationResult { f, x: x.to_vec(), iter, eval, history: minimization_history });
+            return Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval, history: minimization_history, minimization_algorithm: MinimizationAlgorithm::GradientDescent})
         }
     }
 

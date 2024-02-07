@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use crate::{exit_condition, line_search, MinimizationResult, plot};
 use crate::lbfgs::lbfgs_deque::{HistoryPoint, fifo_operation};
-use crate::settings::Settings;
+use crate::settings::{MinimizationAlgorithm, Settings};
 
 mod lbfgs_deque;
 
@@ -143,6 +143,10 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
 
     // History
     let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
+    // Save the history
+    if settings.save_history {
+        minimization_history.push(plot::history::MinimizationHistoryPoint { k, f, x: x.to_vec(), eval });
+    }
 
     // Main loop
     loop {
@@ -203,5 +207,5 @@ pub fn lbfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient,
         }
     }
 
-    Ok(MinimizationResult { f, x: x.to_vec(), iter: k, eval, history: minimization_history })
+    Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval, history: minimization_history, minimization_algorithm: MinimizationAlgorithm::Lbfgs})
 }

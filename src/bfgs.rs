@@ -1,5 +1,5 @@
 use crate::{exit_condition, line_search, plot, MinimizationResult};
-use crate::settings::Settings;
+use crate::settings::{MinimizationAlgorithm, Settings};
 
 #[allow(non_snake_case, clippy::too_many_arguments)]
 fn Hessian(H: &mut [f64], s: &[f64], y: &[f64], I: &[f64], B: &mut Vec<f64>, C: &mut Vec<f64>,
@@ -92,6 +92,10 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
 
     // History
     let mut minimization_history: Vec<plot::history::MinimizationHistoryPoint> = Vec::new();
+    // Save the history
+    if settings.save_history {
+        minimization_history.push(plot::history::MinimizationHistoryPoint { k, f, x: x.to_vec(), eval });
+    }
 
     // Main loop
     loop {
@@ -151,5 +155,5 @@ pub fn bfgs<Function, Gradient>(fn_function: &Function, fn_gradient: &Gradient, 
         }
     }
 
-    Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval, history: minimization_history })
+    Ok(MinimizationResult{f, x: x.to_vec(), iter: k, eval, history: minimization_history, minimization_algorithm: MinimizationAlgorithm::Bfgs})
 }

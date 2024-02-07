@@ -1,5 +1,5 @@
 use rand::{Rng, thread_rng};
-use bfgs::settings::MinimizationAlg;
+use bfgs::settings::MinimizationAlgorithm;
 
 mod test_functions;
 mod test_utils;
@@ -11,7 +11,7 @@ fn test_sphere_function() {
     // Create settings with default parameters
     let mut settings: bfgs::settings::Settings = Default::default();
     // Select the minimization algorithm
-    settings.minimization = MinimizationAlg::GradientDescent;
+    settings.minimization = MinimizationAlgorithm::GradientDescent;
     settings.iter_max = 1000;
 
     let dims = vec![2, 6, 20, 100, 1000];

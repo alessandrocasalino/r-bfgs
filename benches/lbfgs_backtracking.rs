@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use bfgs::settings::{LineSearchAlg, MinimizationAlg};
+use bfgs::settings::{LineSearchAlgorithm, MinimizationAlgorithm};
 
 mod bench_functions;
 
@@ -10,8 +10,8 @@ fn bench_lbfgs_sphere_backtracking(c: &mut Criterion) {
     let dims = vec![2, 6, 20, 60, 200];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Lbfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Lbfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     let mut group = c.benchmark_group("lbfgs_backtracking_sphere");
 
@@ -28,8 +28,8 @@ fn bench_lbfgs_backtracking_booth(c: &mut Criterion) {
     let dims = vec![2];
 
     let mut settings: bfgs::settings::Settings = Default::default();
-    settings.minimization = MinimizationAlg::Lbfgs;
-    settings.line_search = LineSearchAlg::Backtracking;
+    settings.minimization = MinimizationAlgorithm::Lbfgs;
+    settings.line_search = LineSearchAlgorithm::Backtracking;
 
     let mut group = c.benchmark_group("lbfgs_backtracking_booth");
 
