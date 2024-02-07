@@ -9,6 +9,10 @@ impl MinimizationResult {
         if self.history.is_empty() {
             Err("No history to plot. Maybe you did not set settings.save_history?")?;
         }
+        // TODO: Add choice for which dimensions to plot
+        if self.x.len() != 2 {
+            Err("The minimization result must have 2 dimensions to be plotted")?;
+        }
         plot_points::plot_points(&self, path)
     }
 }
